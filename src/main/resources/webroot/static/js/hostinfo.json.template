@@ -1,0 +1,10 @@
+{
+    "hosts": {
+        "host1": "HOST1",
+        "host2": "HOST2"
+    },
+    "loginmodes": {
+        "HOST1": "otp",
+        "HOST2": "pw"
+    }
+}

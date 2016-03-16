@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>SFTP Beamer Transfer Server</title>
+
+    <link rel="stylesheet" href="static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="static/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="static/css/dashboard.css">
+    <link rel="stylesheet" href="static/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="static/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="static/css/dataTables.bootstrap.css">
+
+
+    <script type="text/javascript" src="static/js/jquery.js"></script>
+    <script type="text/javascript" src="static/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="static/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="static/js/dataTables.bootstrap.js"></script>
+    <script type="text/javascript" src="static/js/utils.js"></script>
+    <script type="text/javascript" src="static/js/dashboard.js"></script>
+    <script type="text/javascript" src="static/js/login.js"></script>
+    <script type="text/javascript" src="static/js/jquery.fileupload.js"></script>
+    <script type="text/javascript" src="static/js/jquery.iframe-transport.js"></script>
+    <script type="text/javascript" src="static/js/jquery.ui.widget.js"></script>
+</head>
+<body>
+<div class="modal fade" role="dialog" id="info_modal" tabindex="-1" aria-labelledby="info_modal_label">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h5 class="modal-title" id="info_modal_label"></h5>
+            </div>
+            <div class="modal-body">
+                <p></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" role="dialog" id="credential_modal" tabindex="-1" aria-labelledby="credential_modal_label">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h5 class="modal-title" id="credential_modal_label">Please input credential</h5>
+            </div>
+            <div class="modal-body">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal" id="credential_submit">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default container-fluid">
+    <div class="panel-body row">
+        <h1 class="site-title">SFTP Beamer</h1>
+    </div>
+    <div class="panel-body row">
+        <div class="panel panel-info col-md-6 host1">
+            <div class="panel-heading">
+                <h4 class="panel-title text-center">Host 1</h4>
+            </div>
+            <div class="panel-body">
+                <form class="form-inline login-form host1-form">
+                    <div class="form-group">
+                        <label class="sr-only" for="host1-username">User Name</label>
+                        <input type="text" class="form-control form-input" id="host1-username" placeholder="User Name">
+                    </div>
+                    <div class="form-group">
+                        <label class="sr-only" for="host1-hostname">Hostname</label>
+                        <input type="text" class="form-control form-input" id="host1-hostname" placeholder="Hostname" value="">
+                    </div>
+                    <div class="form-group">
+                        <label class="sr-only" for="host1-port">Port</label>
+                        <input type="text" class="form-control form-input" id="host1-port" placeholder="Port" value="22">
+                    </div>
+                    <br>
+                    <input type="button" id="host1-submit-btn" class="btn btn-primary btn-connect" data-target="host1" value="Connect">
+                    <input type="button" id="host1-disconnect-btn" class="btn btn-primary btn-disconnect" disabled="disabled" value="Disconnect">
+                </form>
+                <div class="panel panel-default">
+                    <div class="panel-heading" id="host1-path"></div>
+                    <div id="host1-table-div"></div>
+                </div>
+            </div>
+            <div class="panel-footer text-right">
+                <button type="button" class="btn btn-primary" disabled="disabled" id="host1-delete-btn">Delete</button>
+                <button type="button" class="btn btn-primary" disabled="disabled" id="host1-transfer-btn">Transfer</button>
+            </div>
+        </div>
+        <div class="panel panel-info col-md-6 host2">
+            <div class="panel-heading">
+                <h4 class="panel-title text-center">Host 2</h4>
+            </div>
+            <div class="panel-body">
+                <form class="form-inline login-form host2-form">
+                    <div class="form-group">
+                        <label class="sr-only" for="host2-username">User Name</label>
+                        <input type="text" class="form-control form-input" id="host2-username" placeholder="User Name">
+                    </div>
+                    <div class="form-group">
+                        <label class="sr-only" for="host2-hostname">Hostname</label>
+                        <input type="text" class="form-control form-input" id="host2-hostname" placeholder="Hostname" value="">
+                    </div>
+                    <div class="form-group">
+                        <label class="sr-only" for="host2-port">Port</label>
+                        <input type="text" class="form-control form-input" id="host2-port" placeholder="Port" value="22">
+                    </div>
+                    <br>
+                    <input type="button" id="host2-submit-btn" class="btn btn-primary btn-connect" data-target="host2" value="Connect">
+                    <input type="button" id="host2-disconnect-btn" class="btn btn-primary btn-disconnect" disabled="disabled" value="Disconnect">
+                </form>
+                <div class="panel panel-default">
+                    <div class="panel-heading" id="host2-path"></div>
+                    <div id="host2-table-div"></div>
+                </div>
+            </div>
+            <div class="panel-footer text-right">
+                <button type="button" class="btn btn-primary" disabled="disabled" id="host2-delete-btn">Delete</button>
+                <button type="button" class="btn btn-primary" disabled="disabled" id="host2-transfer-btn">Transfer</button>
+            </div>
+        </div>
+    </div>
+    <div class="panel-footer" style="height: 41px">
+        <div id="transferred-file-name" style="float: left;"></div>
+        <div class="progress" style="margin-bottom: 0; padding-left: 0; padding-right: 0">
+            <div id="transferred-file-progress-bar" class="progress-bar progress-bar-info progress-bar-striped" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="width: 0; color: black;">
+            </div>
+        </div>
+    </div>
+</div>
+<div id="waiting-box">
+    <i class="fa fa-cog fa-spin fa-3x"></i>
+    <p></p>
+</div>
+<div id="gray-screen"></div>
+</body>
+</html>
