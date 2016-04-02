@@ -13,18 +13,19 @@
     <link rel="stylesheet" href="static/css/jquery.dataTables.min.css">
     <link rel="stylesheet" href="static/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="static/css/dataTables.bootstrap.css">
+    <link rel="stylesheet" href="static/css/jquery.fileupload.css">
 
 
     <script type="text/javascript" src="static/js/jquery.js"></script>
     <script type="text/javascript" src="static/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="static/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="static/js/dataTables.bootstrap.js"></script>
+    <script type="text/javascript" src="static/js/jquery.iframe-transport.js"></script>
+    <script type="text/javascript" src="static/js/jquery.ui.widget.js"></script>
+    <script type="text/javascript" src="static/js/jquery.fileupload.js"></script>
     <script type="text/javascript" src="static/js/utils.js"></script>
     <script type="text/javascript" src="static/js/dashboard.js"></script>
     <script type="text/javascript" src="static/js/login.js"></script>
-    <script type="text/javascript" src="static/js/jquery.fileupload.js"></script>
-    <script type="text/javascript" src="static/js/jquery.iframe-transport.js"></script>
-    <script type="text/javascript" src="static/js/jquery.ui.widget.js"></script>
 </head>
 <body>
 <div class="modal fade" role="dialog" id="info_modal" tabindex="-1" aria-labelledby="info_modal_label">
@@ -95,6 +96,12 @@
                 </div>
             </div>
             <div class="panel-footer text-right">
+                <span class="btn btn-success fileinput-button">
+                    <i class="glyphicon glyphicon-plus"></i>
+                    <span>Upload file</span>
+                    <!-- The file input field used as target for the file upload widget -->
+                    <input id="upload" type="file" name="file">
+                </span>
                 <button type="button" class="btn btn-primary" disabled="disabled" id="host1-delete-btn">Delete</button>
                 <button type="button" class="btn btn-primary" disabled="disabled" id="host1-transfer-btn">Transfer</button>
             </div>

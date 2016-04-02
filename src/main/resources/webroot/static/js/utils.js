@@ -24,7 +24,7 @@ function createTable(name, content) {
                 "render": function (data, type, full, meta) {
                     var isFoler = full[2];
                     if (isFoler == "folder") {
-                        return '<i class="fa fa-folder-o"></i> <a class="host1-folder-link" href="/list?path=/' + data + '&source=host1"> ' + data + '</a>';
+                        return '<i class="fa fa-folder-o"></i> <a class="host1-folder-link" href="/sftp/list?path=/' + data + '&source=host1"> ' + data + '</a>';
                     } else {
                         return '<i class="fa fa-file-o"></i> ' + data;
                     }
@@ -54,7 +54,7 @@ function createTable(name, content) {
                 "render": function (data, type, full, meta) {
                     var isFolder = full[2];
                     if (isFolder == "folder") {
-                        return '<i class="fa fa-folder-o"></i> <a class="host2-folder-link" href="/list?path=/' + data + '&source=host2"> ' + data + '</a>';
+                        return '<i class="fa fa-folder-o"></i> <a class="host2-folder-link" href="/sftp/list?path=/' + data + '&source=host2"> ' + data + '</a>';
                     } else {
                         return '<i class="fa fa-file-o"></i> ' + data;
                     }
@@ -154,4 +154,9 @@ function generateId(len) {
     var arr = new Uint8Array((len || 40) / 2);
     window.crypto.getRandomValues(arr);
     return [].map.call(arr, function(n) { return n.toString(16); }).join("");
+}
+
+function extractPath(href) {
+    var path = href.substring(href.indexOf("?") + 1, href.indexOf("&"));
+    return path.substring(path.indexOf("=") + 1);
 }

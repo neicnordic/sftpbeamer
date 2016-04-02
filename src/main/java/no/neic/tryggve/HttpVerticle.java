@@ -11,7 +11,11 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.shareddata.LocalMap;
+import io.vertx.core.shareddata.SharedData;
+import io.vertx.ext.web.FileUpload;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.Session;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CookieHandler;
@@ -26,12 +30,14 @@ import java.io.OutputStream;
 import java.nio.file.FileSystems;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.Vector;
 
 public final class HttpVerticle extends AbstractVerticle {
 
     @Override
     public void start() throws Exception {
+
         HttpServer httpServer = vertx.createHttpServer();
         Router router = Router.router(vertx);
 
@@ -39,11 +45,12 @@ public final class HttpVerticle extends AbstractVerticle {
 
         router.route().handler(SessionHandler.create(LocalSessionStore.create(vertx)));
 
-        router.route().handler(BodyHandler.create());
+        router.route("/sftp/*").handler(BodyHandler.create());
 
-        router.route(HttpMethod.POST, "/login")
+        router.post("/sftp/login")
                 .consumes("*/json").produces("application/json")
                 .blockingHandler(routingContext -> {
+
                     JsonObject requestJsonBody = routingContext.getBodyAsJson();
                     String userName = requestJsonBody.getString(JsonName.USERNAME);
                     String otc = requestJsonBody.getString(JsonName.OTC);
@@ -56,16 +63,26 @@ public final class HttpVerticle extends AbstractVerticle {
                     ChannelSftp channelSftp = null;
                     try {
                         Session session = routingContext.session();
-                        com.jcraft.jsch.Session jschSession;
+                        String sessionId = session.id();
+
+                        SftpSessionManager sftpSessionManager = SftpSessionManager.getManager();
                         if (otc.isEmpty()) {
-                            jschSession = Utils.createJschSession(userName, password, hostName, Integer.parseInt(port));
+                            sftpSessionManager.createSftpSession(sessionId, source, userName, password, hostName, Integer.parseInt(port));
                         } else {
-                            jschSession = Utils.createJschSession(userName, password, otc, hostName, Integer.parseInt(port));
+                            sftpSessionManager.createSftpSession(sessionId, source, userName, password, otc, hostName, Integer.parseInt(port));
                         }
-                        session.put(source, jschSession);
-                        channelSftp = (ChannelSftp) jschSession.openChannel("sftp");
-                        channelSftp.setBulkRequests(64);
-                        channelSftp.connect();
+                        channelSftp = sftpSessionManager.openSftpChannel(sessionId, source);
+
+//                        com.jcraft.jsch.Session jschSession;
+//                        if (otc.isEmpty()) {
+//                            jschSession = Utils.createJschSession(userName, password, hostName, Integer.parseInt(port));
+//                        } else {
+//                            jschSession = Utils.createJschSession(userName, password, otc, hostName, Integer.parseInt(port));
+//                        }
+//                        session.put(source, jschSession);
+//                        channelSftp = (ChannelSftp) jschSession.openChannel("sftp");
+//                        channelSftp.setBulkRequests(64);
+//                        channelSftp.connect();
 
                         Vector<ChannelSftp.LsEntry> entryVector = channelSftp.ls(FileSystems.getDefault().getSeparator());
                         List<List<String>> entryList = new ArrayList<>(entryVector.size());
@@ -132,7 +149,7 @@ public final class HttpVerticle extends AbstractVerticle {
 //
 //                }, false);
 
-        router.route(HttpMethod.POST, "/transfer")
+        router.post( "/sftp/transfer")
                 .consumes("*/json").produces("application/json")
                 .handler(routingContext -> {
                     JsonObject requestJsonBody = routingContext.getBodyAsJson();
@@ -147,10 +164,14 @@ public final class HttpVerticle extends AbstractVerticle {
                         ChannelSftp channelSftpTo = null;
 
                         Session session = routingContext.session();
+                        String sessionId = session.id();
 
                         try {
-                            channelSftpFrom = Utils.createSftpChannel(session.<com.jcraft.jsch.Session>get(requestJsonBody.getJsonObject("from").getString("name")));
-                            channelSftpTo = Utils.createSftpChannel(session.<com.jcraft.jsch.Session>get(requestJsonBody.getJsonObject("to").getString("name")));
+//                            channelSftpFrom = Utils.createSftpChannel(session.<com.jcraft.jsch.Session>get(requestJsonBody.getJsonObject("from").getString("name")));
+//                            channelSftpTo = Utils.createSftpChannel(session.<com.jcraft.jsch.Session>get(requestJsonBody.getJsonObject("to").getString("name")));
+
+                            channelSftpFrom = SftpSessionManager.getManager().openSftpChannel(sessionId, requestJsonBody.getJsonObject("from").getString("name"));
+                            channelSftpTo = SftpSessionManager.getManager().openSftpChannel(sessionId, requestJsonBody.getJsonObject("to").getString("name"));
                             JsonObject jsonObject;
                             for (Object item : dataArray) {
                                 jsonObject = (JsonObject) item;
@@ -175,15 +196,17 @@ public final class HttpVerticle extends AbstractVerticle {
 
                 });
 
-        router.get("/list").produces("application/json").blockingHandler(routingContext -> {
+        router.get("/sftp/list").produces("application/json").blockingHandler(routingContext -> {
             String path = routingContext.request().getParam(UrlParam.PATH);
             String source = routingContext.request().getParam(UrlParam.SOURCE);
             ChannelSftp channelSftp = null;
 
             Session session = routingContext.session();
+            String sessionId = session.id();
 
             try {
-                channelSftp = Utils.createSftpChannel(session.<com.jcraft.jsch.Session>get(source));
+//                channelSftp = Utils.createSftpChannel(session.<com.jcraft.jsch.Session>get(source));
+                channelSftp = SftpSessionManager.getManager().openSftpChannel(sessionId, source);
 
                 Vector<ChannelSftp.LsEntry> entryVector = channelSftp.ls(path);
                 List<List<String>> entryList = new ArrayList<>(entryVector.size());
@@ -212,46 +235,92 @@ public final class HttpVerticle extends AbstractVerticle {
             }
         }, false);
 
-        router.post("/upload").blockingHandler(routingContext -> {
+        router.get("/sftp/upload").produces("text/plain").blockingHandler(routingContext -> {
             String source = routingContext.request().getParam(UrlParam.SOURCE);
-            String destination = routingContext.request().getParam(UrlParam.PATH);
+            String sessionId = routingContext.session().id();
+            System.out.println("Session Id " + sessionId);
 
-            routingContext.request().setExpectMultipart(true);
-            routingContext.request().uploadHandler(upload -> {
-                String absoluteFilePath = destination + upload.filename();
-                ChannelSftp channelSftp = null;
-                try {
-                    channelSftp = Utils.createSftpChannel(routingContext.session().<com.jcraft.jsch.Session>get(source));
-                    OutputStream ops = channelSftp.put(absoluteFilePath);
-                    upload.exceptionHandler(cause -> routingContext.request().response().setChunked(true).end("Upload failed"));
-                    upload.endHandler(v -> routingContext.request().response().setChunked(true).end("Successfully uploaded to " + upload.filename()));
-                    upload.handler(buffer -> {
-                        try {
-                            ops.write(buffer.getBytes());
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    });
-                } catch (JSchException | SftpException e) {
-                    e.printStackTrace();
-                    routingContext.request().response().setChunked(true).end(e.getMessage());
+            SharedData sharedData = vertx.sharedData();
+            LocalMap<String, JsonObject> localMap = sharedData.getLocalMap("upload");
+            String uuid = UUID.randomUUID().toString();
 
-                } finally {
-                    if (channelSftp != null && channelSftp.isConnected()) {
-                        channelSftp.disconnect();
+
+            System.out.println("Generated reference " + uuid);
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.put("source", source);
+            jsonObject.put("session_id", sessionId);
+            localMap.put(uuid, jsonObject);
+
+            routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(uuid);
+        }, false);
+
+        router.post("/sftp/delete").produces("application/json").blockingHandler(routingContext -> {
+            JsonObject requestJsonBody = routingContext.getBodyAsJson();
+            String path = requestJsonBody.getString("path");
+            String source = requestJsonBody.getString("source");
+            JsonArray data = requestJsonBody.getJsonArray("data");
+
+            Session session = routingContext.session();
+            String sessionId = session.id();
+
+            ChannelSftp channelSftp = null;
+            try {
+                channelSftp = SftpSessionManager.getManager().openSftpChannel(sessionId, source);
+
+                JsonObject item;
+                for (Object object : data) {
+                    item = (JsonObject) object;
+                    if (item.getString("type").equals("file")) {
+                        channelSftp.rm(path + FileSystems.getDefault().getSeparator() + item.getString("name"));
+                    } else {
+                        deleteFolder(path + FileSystems.getDefault().getSeparator() + item.getString("name"), channelSftp);
                     }
                 }
-            });
+                routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
+
+            } catch (JSchException | SftpException e) {
+                e.printStackTrace();
+                routingContext.response().setStatusCode(HttpResponseStatus.BAD_REQUEST.code()).end();
+            } finally {
+                if (channelSftp != null && channelSftp.isConnected()) {
+                    channelSftp.disconnect();
+                }
+            }
         }, false);
+
+        router.delete("/sftp/disconnect").produces("application/json").handler(routingContext -> {
+            String source = routingContext.request().getParam(UrlParam.SOURCE);
+
+            Session session = routingContext.session();
+            String sessionId = session.id();
+            SftpSessionManager.getManager().disconnectSftp(sessionId, source);
+            routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
+
+        });
 
         router.route().handler(StaticHandler.create());
         router.route("/static/*").handler(StaticHandler.create());
 
         httpServer.requestHandler(router::accept).listen(8080);
+
     }
 
     @Override
     public void stop() throws Exception {
         super.stop();
+    }
+
+    private void deleteFolder(String folderPath, ChannelSftp channelSftp) throws SftpException{
+        Vector<ChannelSftp.LsEntry> entries = channelSftp.ls(folderPath);
+        for (ChannelSftp.LsEntry entry : entries) {
+            if (!entry.getFilename().startsWith(".")) {
+                if (entry.getAttrs().isDir()) {
+                    deleteFolder(folderPath + FileSystems.getDefault().getSeparator() + entry.getFilename(), channelSftp);
+                } else {
+                    channelSftp.rm(folderPath + FileSystems.getDefault().getSeparator() + entry.getFilename());
+                }
+            }
+        }
+        channelSftp.rmdir(folderPath);
     }
 }

@@ -3,6 +3,8 @@
  */
 
 $(document).ready(function() {
+    var host1_upload_url;
+
     $("#host1-table-div").on('click', 'tbody>tr', function () {
         $(this).toggleClass('selected');
     });
@@ -38,7 +40,8 @@ $(document).ready(function() {
                     });
                 } else {
                     var path = returnedData["path"];
-                    $("#host1-path").append('<a class="host1-path-link" href="/list?path=' + path + '&source=host1">' + folder_name + '/</a>');
+                    $("#host1-path").append('<a class="host1-path-link" href="/sftp/list?path=' + path + '&source=host1">' + folder_name + '/</a>');
+                    host1_upload_url = "http://localhost:8082/upload?path=" + extractPath($(".host1-path-link").last().attr("href"));
                     reloadTableData(returnedData["data"], path, "host1");
                 }
             }
@@ -77,6 +80,7 @@ $(document).ready(function() {
                             $(this).remove();
                         }
                     });
+                    host1_upload_url = "http://localhost:8082/upload?path=" + extractPath($(".host1-path-link").last().attr("href"));
                     reloadTableData(returnedData["data"], path, "host1");
                 }
             }
@@ -87,7 +91,7 @@ $(document).ready(function() {
         if (source == 'host1' || source == 'host2') {
             $.ajax({
                 type: "GET",
-                url: "/disconnect?source=" + source,
+                url: "/sftp/disconnect?source=" + source,
                 success: function () {
                     fetch_table(source).api().destroy();
                     $("#" + source + "-table").empty();
@@ -142,7 +146,7 @@ $(document).ready(function() {
                     });
                 } else {
                     var path = returnedData["path"];
-                    $("#host2-path").append('<a class="host2-path-link" href="/list?path=' + path + '&source=host2">' + folder_name + '/</a>');
+                    $("#host2-path").append('<a class="host2-path-link" href="/sftp/list?path=' + path + '&source=host2">' + folder_name + '/</a>');
                     reloadTableData(returnedData["data"], path, "host2");
                 }
             }
@@ -275,19 +279,13 @@ $(document).ready(function() {
             });
 
             var path = extractPath($('.host2-path-link:last').attr('href'));
-            var csrftoken = getCookie('csrftoken');
 
             $.ajax({
                 type: "POST",
-                url: "/delete",
+                url: "/sftp/delete",
                 data: JSON.stringify({"source": "host2", "path": path, "data": transferredData}),
                 dataType: "json",
                 contentType: 'application/json; charset=utf-8',
-                beforeSend: function (xhr) {
-                    if (!this.crossDomain) {
-                        xhr.setRequestHeader("X-CSRFToken", csrftoken);
-                    }
-                },
                 success: function (returnedData) {
                     if (returnedData["error"]) {
                         change_modal_property("Error", returnedData["error"]);
@@ -306,7 +304,7 @@ $(document).ready(function() {
                             backdrop: 'static'
                         });
                     } else {
-                        var url = "/list?path=" + path + "&source=host2";
+                        var url = "/sftp/list?path=" + path + "&source=host2";
                         $.ajax({
                             type: "GET",
                             url: url,
@@ -408,19 +406,13 @@ $(document).ready(function() {
             });
 
             var path = extractPath($('.host1-path-link:last').attr('href'));
-            var csrftoken = getCookie('csrftoken');
 
             $.ajax({
                 type: "POST",
-                url: "/delete",
+                url: "/sftp/delete",
                 data: JSON.stringify({"source": "host1", "path": path, "data": transferredData}),
                 dataType: "json",
                 contentType: 'application/json; charset=utf-8',
-                beforeSend: function (xhr) {
-                    if (!this.crossDomain) {
-                        xhr.setRequestHeader("X-CSRFToken", csrftoken);
-                    }
-                },
                 success: function (returnedData) {
                     if (returnedData["error"]) {
                         change_modal_property("Error", returnedData["error"]);
@@ -439,7 +431,7 @@ $(document).ready(function() {
                             backdrop: 'static'
                         });
                     } else {
-                        var url = "/list?path=" + path + "&source=host1";
+                        var url = "/sftp/list?path=" + path + "&source=host1";
                         $.ajax({
                             type: "GET",
                             url: url,
@@ -452,11 +444,6 @@ $(document).ready(function() {
             });
         }
     });
-
-    function extractPath(href) {
-        var path = href.substring(href.indexOf("?") + 1, href.indexOf("&"));
-        return path.substring(path.indexOf("=") + 1);
-    }
 
     function reloadTableData(updatedData, path, source) {
         fetch_table(source).api().destroy();
@@ -481,9 +468,9 @@ $(document).ready(function() {
                     var isFoler = full[2];
                     if (isFoler == "folder") {
                         if (path == "/") {
-                            return '<i class="fa fa-folder-o"></i> <a class="' + source + '-folder-link" href="/list?path=' + path + data + '&source=' + source + '">' + data + '</a>';
+                            return '<i class="fa fa-folder-o"></i> <a class="' + source + '-folder-link" href="/sftp/list?path=' + path + data + '&source=' + source + '">' + data + '</a>';
                         } else {
-                            return '<i class="fa fa-folder-o"></i> <a class="' + source + '-folder-link" href="/list?path=' + path + '/' + data + '&source=' + source + '">' + data + '</a>';
+                            return '<i class="fa fa-folder-o"></i> <a class="' + source + '-folder-link" href="/sftp/list?path=' + path + '/' + data + '&source=' + source + '">' + data + '</a>';
                         }
                     } else {
                         return '<i class="fa fa-file-o"></i> ' + data;
@@ -497,4 +484,36 @@ $(document).ready(function() {
         };
         set_table(source, $("#" + source + "-table").dataTable(settings));
     }
+
+    $('#upload').fileupload({
+        maxChunkSize: 5000000,
+        multipart: false,
+        type: 'PUT',
+        url: '',
+        dataType: 'json',
+        add: function (e, data) {
+            $.ajax({
+                url: "/sftp/upload?source=host1",
+                method: "GET",
+                contents: "text/plain",
+                success: function(reference){
+                    data.headers = {'Reference': reference};
+                    data.url = host1_upload_url;
+                    data.submit();
+                }
+            });
+        },
+        done: function (e, data) {
+            $.each(data.result.file, function (index, file) {
+                alert(file.name);
+            });
+        },
+        progressall: function (e, data) {
+            var progress = parseInt(data.loaded / data.total * 100, 10);
+            $('.progress .progress-bar').css(
+                'width',
+                progress + '%'
+            );
+        }
+    })
 });
