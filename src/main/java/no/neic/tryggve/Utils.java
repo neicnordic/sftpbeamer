@@ -1,12 +1,14 @@
 package no.neic.tryggve;
 
 import com.jcraft.jsch.*;
+import io.vertx.core.eventbus.EventBus;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.util.Vector;
 
 public final class Utils {
     public static Session createJschSession(String userName, String password, String otc, String hostName, int port) throws JSchException {
@@ -123,15 +125,42 @@ public final class Utils {
         }
     }
 
-    public static void transferFile(ChannelSftp from, ChannelSftp to, String pathFrom, String pathTo, String fileName, SftpProgressMonitor monitor) throws SftpException, IOException {
-        from.cd(pathFrom);
-        to.cd(pathTo);
+    public static void transferFile(ChannelSftp from, ChannelSftp to, String pathFrom, String pathTo, String fileName, EventBus bus, String messageAddress) {
+        SftpProgressMonitor monitor = new ProgressMonitor(bus, messageAddress);
+        try {
+            from.cd(pathFrom);
+            to.cd(pathTo);
 
-        from.get(pathFrom + FileSystems.getDefault().getSeparator() + fileName, to.put(pathTo + FileSystems.getDefault().getSeparator() + fileName), monitor);
+            from.get(pathFrom + FileSystems.getDefault().getSeparator() + fileName, to.put(pathTo + FileSystems.getDefault().getSeparator() + fileName), monitor);
+        } catch (SftpException e) {
+            e.printStackTrace();
+        }
 //        to.put(from.get(pathFrom + FileSystems.getDefault().getSeparator() + fileName), pathTo + FileSystems.getDefault().getSeparator() + fileName);
 
 //        try (BufferedInputStream bis = new BufferedInputStream(from.get(pathFrom + FileSystems.getDefault().getSeparator() + fileName), 32768)) {
 //            to.put(bis, pathTo + FileSystems.getDefault().getSeparator() + fileName);
 //        }
+    }
+
+    public static void transferFolder(ChannelSftp from, ChannelSftp to, String pathFrom, String pathTo, String folderName, EventBus bus, String messageAddress){
+        String newPathTo = pathTo + FileSystems.getDefault().getSeparator() + folderName;
+
+        try {
+            to.mkdir(newPathTo);
+        } catch (SftpException e) {}
+
+        String newPathFrom = pathFrom + FileSystems.getDefault().getSeparator() + folderName;
+        try {
+            Vector<ChannelSftp.LsEntry> entryVector = from.ls(newPathFrom);
+            entryVector.stream().filter(entry -> !entry.getFilename().startsWith(".")).forEach(entry -> {
+                if (entry.getAttrs().isDir()) {
+                    transferFolder(from, to, newPathFrom, newPathTo, entry.getFilename(), bus, messageAddress);
+                } else {
+                    transferFile(from, to, newPathFrom, newPathTo, entry.getFilename(), bus, messageAddress);
+                }
+            });
+        } catch (SftpException e) {
+            e.printStackTrace();
+        }
     }
 }

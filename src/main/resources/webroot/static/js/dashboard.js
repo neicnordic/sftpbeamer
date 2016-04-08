@@ -286,32 +286,36 @@ $(document).ready(function() {
                 data: JSON.stringify({"source": "host2", "path": path, "data": transferredData}),
                 dataType: "json",
                 contentType: 'application/json; charset=utf-8',
-                success: function (returnedData) {
-                    if (returnedData["error"]) {
-                        change_modal_property("Error", returnedData["error"]);
-                        var modal = $('#info_modal');
-                        modal.one('hide.bs.modal', function (event) {
-                            location.reload();
-                        });
-                        modal.modal({
-                            keyboard: false,
-                            backdrop: 'static'
-                        });
-                    } else if (returnedData["exception"]) {
-                        change_modal_property("Exception", returnedData["exception"]);
-                        $('#info_modal').modal({
-                            keyboard: false,
-                            backdrop: 'static'
-                        });
-                    } else {
+                statusCode: {
+                    200: function () {
                         var url = "/sftp/list?path=" + path + "&source=host2";
                         $.ajax({
                             type: "GET",
                             url: url,
+                            dataType: "json",
                             success: function (updatedData) {
                                 reloadTableData(updatedData["data"], updatedData["path"], "host2");
                             }
                         });
+                    },
+                    500: function (returnedData) {
+                        if (returnedData["error"]) {
+                            change_modal_property("Error", returnedData["error"]);
+                            var modal = $('#info_modal');
+                            modal.one('hide.bs.modal', function (event) {
+                                location.reload();
+                            });
+                            modal.modal({
+                                keyboard: false,
+                                backdrop: 'static'
+                            });
+                        } else if (returnedData["exception"]) {
+                            change_modal_property("Exception", returnedData["exception"]);
+                            $('#info_modal').modal({
+                                keyboard: false,
+                                backdrop: 'static'
+                            });
+                        }
                     }
                 }
             });
@@ -319,7 +323,8 @@ $(document).ready(function() {
     });
 
     $('#host1-transfer-btn').click(function() {
-        var transferredData = [];
+        var fileData = [];
+        var folderData = [];
 
         var selected_items = host1_table.api().rows('.selected').data();
         if (selected_items.length == 0) {
@@ -330,7 +335,12 @@ $(document).ready(function() {
             });
         } else {
             selected_items.each(function (item) {
-                transferredData.push({"name": item[0], "type": item[2]});
+                if (item[2] == 'file') {
+                    fileData.push(item[0]);
+                }
+                if (item[2] == 'folder') {
+                    folderData.push(item[0]);
+                }
             });
 
             var from_path = extractPath($('.host1-path-link:last').attr('href'));
@@ -341,10 +351,10 @@ $(document).ready(function() {
             var messageAddress = generateId(40);
             $.ajax({
                 type: "POST",
-                url: "/transfer",
+                url: "/sftp/transfer",
                 data: JSON.stringify({
                     "address": messageAddress,
-                    "from": {"path": from_path, "name": "host1", "data": transferredData},
+                    "from": {"path": from_path, "name": "host1", "data": {"file": fileData, "folder": folderData}},
                     "to": {"path": to_path, "name": "host2"}
                 }),
                 dataType: "json",
@@ -413,32 +423,36 @@ $(document).ready(function() {
                 data: JSON.stringify({"source": "host1", "path": path, "data": transferredData}),
                 dataType: "json",
                 contentType: 'application/json; charset=utf-8',
-                success: function (returnedData) {
-                    if (returnedData["error"]) {
-                        change_modal_property("Error", returnedData["error"]);
-                        var modal = $('#info_modal');
-                        modal.one('hide.bs.modal', function (event) {
-                            location.reload();
-                        });
-                        modal.modal({
-                            keyboard: false,
-                            backdrop: 'static'
-                        });
-                    } else if (returnedData["exception"]) {
-                        change_modal_property("Exception", returnedData["exception"]);
-                        $('#info_modal').modal({
-                            keyboard: false,
-                            backdrop: 'static'
-                        });
-                    } else {
+                statusCode: {
+                    200: function () {
                         var url = "/sftp/list?path=" + path + "&source=host1";
                         $.ajax({
                             type: "GET",
                             url: url,
+                            dataType: "json",
                             success: function (updatedData) {
                                 reloadTableData(updatedData["data"], updatedData["path"], "host1");
                             }
                         });
+                    },
+                    500: function (returnedData) {
+                        if (returnedData["error"]) {
+                            change_modal_property("Error", returnedData["error"]);
+                            var modal = $('#info_modal');
+                            modal.one('hide.bs.modal', function (event) {
+                                location.reload();
+                            });
+                            modal.modal({
+                                keyboard: false,
+                                backdrop: 'static'
+                            });
+                        } else if (returnedData["exception"]) {
+                            change_modal_property("Exception", returnedData["exception"]);
+                            $('#info_modal').modal({
+                                keyboard: false,
+                                backdrop: 'static'
+                            });
+                        }
                     }
                 }
             });

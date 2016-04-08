@@ -10,19 +10,17 @@ public final class WebSocketVerticle extends AbstractVerticle {
     public void start() throws Exception {
         vertx.createHttpServer().websocketHandler(serverWebSocket -> {
             if (serverWebSocket.path().equals("/ws")) {
-                vertx.executeBlocking(future ->
-                                serverWebSocket.handler(buffer -> {
-                                    JsonObject jsonObject = buffer.toJsonObject();
-                                    String address = jsonObject.getString("address");
-                                    EventBus bus = vertx.eventBus();
-                                    MessageConsumer<String> consumer = bus.consumer(address);
-                                    consumer.handler(message -> {
-                                        String str = message.body();
-                                        serverWebSocket.writeFinalTextFrame(str);
-                                    });
-                                })
-                        , false, result -> {
-                        });
+
+                serverWebSocket.handler(buffer -> {
+                    JsonObject jsonObject = buffer.toJsonObject();
+                    String address = jsonObject.getString("address");
+                    EventBus bus = vertx.eventBus();
+                    MessageConsumer<String> consumer = bus.consumer(address);
+                    consumer.handler(message -> {
+                        String str = message.body();
+                        serverWebSocket.writeFinalTextFrame(str);
+                    });
+                });
             } else {
                 serverWebSocket.reject();
             }

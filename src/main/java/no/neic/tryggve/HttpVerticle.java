@@ -5,17 +5,13 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.shareddata.LocalMap;
 import io.vertx.core.shareddata.SharedData;
-import io.vertx.ext.web.FileUpload;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.Session;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CookieHandler;
@@ -25,8 +21,6 @@ import io.vertx.ext.web.sstore.LocalSessionStore;
 import no.neic.tryggve.constants.JsonName;
 import no.neic.tryggve.constants.UrlParam;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.FileSystems;
 import java.util.ArrayList;
 import java.util.List;
@@ -73,17 +67,6 @@ public final class HttpVerticle extends AbstractVerticle {
                         }
                         channelSftp = sftpSessionManager.openSftpChannel(sessionId, source);
 
-//                        com.jcraft.jsch.Session jschSession;
-//                        if (otc.isEmpty()) {
-//                            jschSession = Utils.createJschSession(userName, password, hostName, Integer.parseInt(port));
-//                        } else {
-//                            jschSession = Utils.createJschSession(userName, password, otc, hostName, Integer.parseInt(port));
-//                        }
-//                        session.put(source, jschSession);
-//                        channelSftp = (ChannelSftp) jschSession.openChannel("sftp");
-//                        channelSftp.setBulkRequests(64);
-//                        channelSftp.connect();
-
                         Vector<ChannelSftp.LsEntry> entryVector = channelSftp.ls(FileSystems.getDefault().getSeparator());
                         List<List<String>> entryList = new ArrayList<>(entryVector.size());
                         entryVector.stream().filter(entry -> !entry.getFilename().startsWith(".")).forEach(entry -> {
@@ -110,44 +93,6 @@ public final class HttpVerticle extends AbstractVerticle {
                     }
                 }, false);
 
-//        router.route(HttpMethod.POST, "/transfer")
-//                .consumes("*/json").produces("application/json")
-//                .blockingHandler(routingContext -> {
-//                    JsonObject requestJsonBody = routingContext.getBodyAsJson();
-//                    String fromPath = requestJsonBody.getJsonObject("from").getString("path");
-//                    String toPath = requestJsonBody.getJsonObject("to").getString("path");
-//                    JsonArray dataArray = requestJsonBody.getJsonObject("from").getJsonArray("data");
-//
-//                    ChannelSftp channelSftpFrom = null;
-//                    ChannelSftp channelSftpTo = null;
-//
-//                    Session session = routingContext.session();
-//
-//                    try {
-//                        channelSftpFrom = Utils.createSftpChannel(session.<com.jcraft.jsch.Session>get(requestJsonBody.getJsonObject("from").getString("name")));
-//                        channelSftpTo = Utils.createSftpChannel(session.<com.jcraft.jsch.Session>get(requestJsonBody.getJsonObject("to").getString("name")));
-//                        JsonObject jsonObject;
-//                        for (Object item : dataArray) {
-//                            jsonObject = (JsonObject) item;
-//                            if (jsonObject.getString("type").equals("file")) {
-//                                Utils.transferFile(channelSftpFrom, channelSftpTo, fromPath, toPath, jsonObject.getString("name"));
-//                            }
-//                        }
-//                        routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
-//                    } catch (JSchException | SftpException | IOException e) {
-//                        e.printStackTrace();
-//                        routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
-//                    } finally {
-//                        if (channelSftpFrom != null && channelSftpFrom.isConnected()) {
-//                            channelSftpFrom.disconnect();
-//                        }
-//                        if (channelSftpTo != null && channelSftpTo.isConnected()) {
-//                            channelSftpTo.disconnect();
-//                        }
-//                    }
-//
-//
-//                }, false);
 
         router.post( "/sftp/transfer")
                 .consumes("*/json").produces("application/json")
@@ -155,31 +100,32 @@ public final class HttpVerticle extends AbstractVerticle {
                     JsonObject requestJsonBody = routingContext.getBodyAsJson();
                     String fromPath = requestJsonBody.getJsonObject("from").getString("path");
                     String toPath = requestJsonBody.getJsonObject("to").getString("path");
-                    JsonArray dataArray = requestJsonBody.getJsonObject("from").getJsonArray("data");
+                    JsonObject data = requestJsonBody.getJsonObject("from").getJsonObject("data");
                     String messageAddress = requestJsonBody.getString("address");
-                    EventBus bus = vertx.eventBus();
+
+                    Session session = routingContext.session();
+                    String sessionId = session.id();
 
                     vertx.executeBlocking(future -> {
+                        EventBus bus = vertx.eventBus();
                         ChannelSftp channelSftpFrom = null;
                         ChannelSftp channelSftpTo = null;
 
-                        Session session = routingContext.session();
-                        String sessionId = session.id();
 
                         try {
-//                            channelSftpFrom = Utils.createSftpChannel(session.<com.jcraft.jsch.Session>get(requestJsonBody.getJsonObject("from").getString("name")));
-//                            channelSftpTo = Utils.createSftpChannel(session.<com.jcraft.jsch.Session>get(requestJsonBody.getJsonObject("to").getString("name")));
-
                             channelSftpFrom = SftpSessionManager.getManager().openSftpChannel(sessionId, requestJsonBody.getJsonObject("from").getString("name"));
                             channelSftpTo = SftpSessionManager.getManager().openSftpChannel(sessionId, requestJsonBody.getJsonObject("to").getString("name"));
-                            JsonObject jsonObject;
-                            for (Object item : dataArray) {
-                                jsonObject = (JsonObject) item;
-                                if (jsonObject.getString("type").equals("file")) {
-                                    Utils.transferFile(channelSftpFrom, channelSftpTo, fromPath, toPath, jsonObject.getString("name"), new ProgressMonitor(bus, messageAddress));
-                                }
+                            JsonArray fileData = data.getJsonArray("file");
+
+                            for (Object fileName : fileData) {
+                                Utils.transferFile(channelSftpFrom, channelSftpTo, fromPath, toPath, String.class.cast(fileName), bus, messageAddress);
                             }
-                        } catch (JSchException | SftpException | IOException e) {
+
+                            JsonArray folderData = data.getJsonArray("folder");
+                            for (Object folderName : folderData) {
+                                Utils.transferFolder(channelSftpFrom, channelSftpTo, fromPath, toPath, String.class.cast(folderName), bus, messageAddress);
+                            }
+                        } catch (JSchException e) {
                             e.printStackTrace();
                         } finally {
                             if (channelSftpFrom != null && channelSftpFrom.isConnected()) {
@@ -205,7 +151,6 @@ public final class HttpVerticle extends AbstractVerticle {
             String sessionId = session.id();
 
             try {
-//                channelSftp = Utils.createSftpChannel(session.<com.jcraft.jsch.Session>get(source));
                 channelSftp = SftpSessionManager.getManager().openSftpChannel(sessionId, source);
 
                 Vector<ChannelSftp.LsEntry> entryVector = channelSftp.ls(path);
@@ -280,7 +225,9 @@ public final class HttpVerticle extends AbstractVerticle {
 
             } catch (JSchException | SftpException e) {
                 e.printStackTrace();
-                routingContext.response().setStatusCode(HttpResponseStatus.BAD_REQUEST.code()).end();
+                JsonObject ex = new JsonObject();
+                ex.put("exception", e.getMessage());
+                routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end(ex.encode());
             } finally {
                 if (channelSftp != null && channelSftp.isConnected()) {
                     channelSftp.disconnect();
