@@ -4,6 +4,7 @@
 
 $(document).ready(function() {
     var host1_upload_url;
+    var host2_upload_url;
 
     $("#host1-table-div").on('click', 'tbody>tr', function () {
         $(this).toggleClass('selected');
@@ -90,7 +91,7 @@ $(document).ready(function() {
     function disconnect_sftp(source) {
         if (source == 'host1' || source == 'host2') {
             $.ajax({
-                type: "GET",
+                type: "DELETE",
                 url: "/sftp/disconnect?source=" + source,
                 success: function () {
                     fetch_table(source).api().destroy();
@@ -147,6 +148,7 @@ $(document).ready(function() {
                 } else {
                     var path = returnedData["path"];
                     $("#host2-path").append('<a class="host2-path-link" href="/sftp/list?path=' + path + '&source=host2">' + folder_name + '/</a>');
+                    host2_upload_url = "http://localhost:8082/upload?path=" + extractPath($(".host2-path-link").last().attr("href"));
                     reloadTableData(returnedData["data"], path, "host2");
                 }
             }
@@ -185,6 +187,7 @@ $(document).ready(function() {
                             $(this).remove();
                         }
                     });
+                    host2_upload_url = "http://localhost:8082/upload?path=" + extractPath($(".host2-path-link").last().attr("href"));
                     reloadTableData(returnedData["data"], path, "host2");
                 }
             }
@@ -192,7 +195,8 @@ $(document).ready(function() {
     });
 
     $('#host2-transfer-btn').click(function() {
-        var transferredData = [];
+        var fileData = [];
+        var folderData = [];
 
         var selected_items = host2_table.api().rows('.selected').data();
         if (selected_items.length == 0) {
@@ -203,18 +207,25 @@ $(document).ready(function() {
             });
         } else {
             selected_items.each(function (item) {
-                transferredData.push({"name": item[0], "type": item[2]});
+                if (item[2] == 'file') {
+                    fileData.push(item[0]);
+                }
+                if (item[2] == 'folder') {
+                    folderData.push(item[0]);
+                }
             });
 
             var from_path = extractPath($('.host2-path-link:last').attr('href'));
             var to_path = extractPath($('.host1-path-link:last').attr('href'));
 
 
+            var messageAddress = generateId(40);
             $.ajax({
                 type: "POST",
-                url: "/transfer",
+                url: "/sftp/transfer",
                 data: JSON.stringify({
-                    "from": {"path": from_path, "name": "host2", "data": transferredData},
+                    "address": messageAddress,
+                    "from": {"path": from_path, "name": "host2", "data": {"file": fileData, "folder": folderData}},
                     "to": {"path": to_path, "name": "host1"}
                 }),
                 dataType: "json",
@@ -237,13 +248,11 @@ $(document).ready(function() {
                             backdrop: 'static'
                         });
                     } else {
-                        var session_key = returnedData["session_key"];
+
                         var ws = create_ws_connection();
                         ws.onopen = function () {
                             ws.send(JSON.stringify({
-                                "session_key": session_key,
-                                "from": {"path": from_path, "name": "host2", "data": transferredData},
-                                "to": {"path": to_path, "name": "host1"}}));
+                                "address": messageAddress}));
                         };
                         ws.onmessage = function (event) {
                             if (event.data == "done") {
@@ -499,7 +508,7 @@ $(document).ready(function() {
         set_table(source, $("#" + source + "-table").dataTable(settings));
     }
 
-    $('#upload').fileupload({
+    $('#host1-upload').fileupload({
         maxChunkSize: 10000000000,
         multipart: false,
         type: 'PUT',
@@ -513,6 +522,38 @@ $(document).ready(function() {
                 success: function(reference){
                     data.headers = {'Reference': reference};
                     data.url = host1_upload_url;
+                    data.submit();
+                }
+            });
+        },
+        done: function (e, data) {
+            $.each(data.result.files, function (index, file) {
+                alert(file.name);
+            });
+        },
+        progressall: function (e, data) {
+            var progress = parseInt(data.loaded / data.total * 100, 10);
+            $('.progress .progress-bar').css(
+                'width',
+                progress + '%'
+            );
+        }
+    })
+
+    $('#host2-upload').fileupload({
+        maxChunkSize: 10000000000,
+        multipart: false,
+        type: 'PUT',
+        url: '',
+        dataType: 'json',
+        add: function (e, data) {
+            $.ajax({
+                url: "/sftp/upload?source=host2",
+                method: "GET",
+                contents: "text/plain",
+                success: function(reference){
+                    data.headers = {'Reference': reference};
+                    data.url = host2_upload_url;
                     data.submit();
                 }
             });
