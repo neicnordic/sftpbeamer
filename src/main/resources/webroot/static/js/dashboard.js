@@ -500,7 +500,7 @@ $(document).ready(function() {
     }
 
     $('#upload').fileupload({
-        maxChunkSize: 5000000,
+        maxChunkSize: 10000000000,
         multipart: false,
         type: 'PUT',
         url: '',
@@ -518,7 +518,7 @@ $(document).ready(function() {
             });
         },
         done: function (e, data) {
-            $.each(data.result.file, function (index, file) {
+            $.each(data.result.files, function (index, file) {
                 alert(file.name);
             });
         },

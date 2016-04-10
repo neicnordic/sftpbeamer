@@ -58,7 +58,7 @@ public final class UploadVerticle extends AbstractVerticle{
                     e.printStackTrace();
                 }
             } else {
-                httpServerRequest.endHandler(aVoid -> httpServerRequest.response().end());
+                httpServerRequest.response().end();
             }
         }).listen(8082);
     }

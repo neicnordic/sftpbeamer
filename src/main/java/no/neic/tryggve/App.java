@@ -1,6 +1,7 @@
 package no.neic.tryggve;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 
 
@@ -10,6 +11,8 @@ public class App extends AbstractVerticle {
         Vertx vertx = Vertx.vertx();
         vertx.deployVerticle(HttpVerticle.class.getName());
         vertx.deployVerticle(WebSocketVerticle.class.getName());
+//        DeploymentOptions options = new DeploymentOptions().setInstances(4);
+//        DeploymentOptions options = new DeploymentOptions().setWorker(true);
         vertx.deployVerticle(UploadVerticle.class.getName());
     }
 
