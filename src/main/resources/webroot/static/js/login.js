@@ -13,11 +13,14 @@ $(document).ready(function() {
     var hostinfourl = '/static/js/hostinfo.json';
     var hostinfo = [];
     $.ajax({
-          type: 'GET',
-          url: hostinfourl,
-          dataType: 'json',
-          success: function(data) { hostinfo = data;},
-          async: false
+        type: 'GET',
+        url: hostinfourl,
+        dataType: 'json',
+        success: function (data) {
+            hostinfo = data;
+            server_name = hostinfo['server'];
+        },
+        async: false
     });
 
     // Populate the hostname inputs with values from config file

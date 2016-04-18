@@ -1,10 +1,11 @@
 {
-    "hosts": {
-        "host1": "tsd-fx01.tsd.usit.no",
-        "host2": "mosler.bils.se"
-    },
-    "loginmodes": {
-        "tsd-fx01.tsd.usit.no": "otp",
-        "mosler.bils.se": "pw"
-    }
+  "server": "localhost",
+  "hosts": {
+    "host1": "tsd-fx01.tsd.usit.no",
+    "host2": "mosler.bils.se"
+  },
+  "loginmodes": {
+    "tsd-fx01.tsd.usit.no": "otp",
+    "mosler.bils.se": "pw"
+  }
 }

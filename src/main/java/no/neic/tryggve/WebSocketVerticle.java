@@ -4,8 +4,12 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
 public final class WebSocketVerticle extends AbstractVerticle {
+    private static final Logger logger = LoggerFactory.getLogger(WebSocketVerticle.class);
+
     @Override
     public void start() throws Exception {
         vertx.createHttpServer().websocketHandler(serverWebSocket -> {

@@ -3,6 +3,7 @@
  */
 var host1_table;
 var host2_table;
+var server_name;
 
 function createTable(name, content) {
     if (name == 'host1') {
@@ -68,21 +69,6 @@ function createTable(name, content) {
     }
 }
 
-function getCookie(name) {
-    var cookieValue = null;
-    if (document.cookie && document.cookie != '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = jQuery.trim(cookies[i]);
-            if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
 function enable_waiting_box(message) {
     $('#gray-screen').css({'display': 'block', opacity: 0.3, 'width': $(document).width(), 'height': $(document).height()});
     $('body').css({'overflow': 'hidden'});
@@ -98,7 +84,7 @@ function disable_waiting_box() {
 
 function create_ws_connection() {
     // This is for local testing
-    var endpoint = 'ws://localhost:8081/ws';
+    var endpoint = 'ws://' + server_name + ':8081/ws';
     // This is for testing server without ssl
     // var endpoint = 'ws://tryggve.cbu.uib.no:80/websocket';
     //This is for testing server with ssl
@@ -159,4 +145,66 @@ function generateId(len) {
 function extractPath(href) {
     var path = href.substring(href.indexOf("?") + 1, href.indexOf("&"));
     return path.substring(path.indexOf("=") + 1);
+}
+
+function disconnect_sftp(source) {
+    if (source == 'host1' || source == 'host2') {
+        $.ajax({
+            type: "DELETE",
+            url: "/sftp/disconnect?source=" + source,
+            success: function () {
+                fetch_table(source).api().destroy();
+                $("#" + source + "-table").empty();
+                $("#" + source + "-table-div").html("");
+                $("#" + source + "-path").html("");
+                $("#" + source + "-delete-btn").prop("disabled", true);
+                $("#" + source + "-transfer-btn").prop("disabled", true);
+                $("#" + source + "-disconnect-btn").prop("disabled", true);
+                $("#" + source + "-submit-btn").prop("disabled", false);
+                $("#" + source + "-username").prop("disabled", false);
+                $("#" + source + "-hostname").prop("disabled", false);
+                $("#" + source + "-port").prop("disabled", false);
+            }
+        });
+    }
+}
+
+function reloadTableData(updatedData, path, source) {
+    fetch_table(source).api().destroy();
+    $("#" + source + "-table").empty();
+    $("#" + source + "-table-div").html('<table id="' + source + '-table" class="table table-striped"></table>');
+    var settings = {
+        "pagingType": "simple",
+        "dom": "tlp",
+        "language": {
+            "paginate": {
+                "next": "&gt;",
+                "previous": "&lt;"
+            }
+        },
+        "info": false,
+        "searching": false,
+        "lengthMenu": [[10, 25, 40, -1], [10, 25, 40, "All"]],
+        "data": updatedData,
+        "columns": [{
+            "title": "Name",
+            "render": function (data, type, full, meta) {
+                var isFoler = full[2];
+                if (isFoler == "folder") {
+                    if (path == "/") {
+                        return '<i class="fa fa-folder-o"></i> <a class="' + source + '-folder-link" href="/sftp/list?path=' + path + data + '&source=' + source + '">' + data + '</a>';
+                    } else {
+                        return '<i class="fa fa-folder-o"></i> <a class="' + source + '-folder-link" href="/sftp/list?path=' + path + '/' + data + '&source=' + source + '">' + data + '</a>';
+                    }
+                } else {
+                    return '<i class="fa fa-file-o"></i> ' + data;
+                }
+            }
+        }, {
+            "title": "Size"
+        }, {
+            "visible": false
+        }]
+    };
+    set_table(source, $("#" + source + "-table").dataTable(settings));
 }

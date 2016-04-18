@@ -1,6 +1,11 @@
 package no.neic.tryggve;
 
+
+
+
 import com.jcraft.jsch.*;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -8,6 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public final class SftpSessionManager {
+    private static final Logger logger = LoggerFactory.getLogger(SftpSessionManager.class);
+
     private static SftpSessionManager manager;
 
     public static SftpSessionManager getManager() {

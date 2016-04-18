@@ -7,8 +7,11 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.shareddata.LocalMap;
 import io.vertx.core.shareddata.SharedData;
+import no.neic.tryggve.constants.ConfigName;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -16,11 +19,13 @@ import java.nio.file.FileSystems;
 import java.util.Arrays;
 
 public final class UploadVerticle extends AbstractVerticle{
+    private static final Logger logger = LoggerFactory.getLogger(UploadVerticle.class);
+
     @Override
     public void start() throws Exception {
         HttpServer httpServer = vertx.createHttpServer();
         httpServer.requestHandler(httpServerRequest -> {
-            httpServerRequest.response().headers().add("Access-Control-Allow-Origin", "http://localhost:8080");
+            httpServerRequest.response().headers().add("Access-Control-Allow-Origin", "http://" + Config.valueOf(ConfigName.HOST) + ":8080");
             httpServerRequest.response().headers().add("Access-Control-Allow-Methods", "PUT");
             httpServerRequest.response().headers().add("Access-Control-Allow-Headers", Arrays.<String>asList(new String[]{"Content-Type", "Content-Range", "Content-Disposition", "Content-Description", "Reference"}));
 

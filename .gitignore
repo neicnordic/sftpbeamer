@@ -154,3 +154,10 @@ com_crashlytics_export_strings.xml
 crashlytics.properties
 crashlytics-build.properties
 
+# logs
+logs
+
+#vertx
+file-uploads
+.vertx
+

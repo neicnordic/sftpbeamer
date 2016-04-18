@@ -9,6 +9,8 @@ import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.shareddata.LocalMap;
 import io.vertx.core.shareddata.SharedData;
 import io.vertx.ext.web.Router;
@@ -28,6 +30,8 @@ import java.util.UUID;
 import java.util.Vector;
 
 public final class HttpVerticle extends AbstractVerticle {
+
+    private static final Logger logger = LoggerFactory.getLogger(HttpVerticle.class);
 
     @Override
     public void start() throws Exception {
