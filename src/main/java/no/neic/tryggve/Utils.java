@@ -1,6 +1,7 @@
 package no.neic.tryggve;
 
 import com.jcraft.jsch.*;
+import com.sun.org.apache.bcel.internal.generic.LSTORE;
 import io.vertx.core.eventbus.EventBus;
 
 import java.io.BufferedInputStream;
@@ -8,6 +9,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
 public final class Utils {
@@ -161,6 +164,39 @@ public final class Utils {
             });
         } catch (SftpException e) {
             e.printStackTrace();
+        }
+    }
+
+    public static FolderNode assembleFolderInfo(ChannelSftp channelSftp, String absolutePath, String folderName) {
+        FolderNode folderNode = new FolderNode();
+        folderNode.folderName = folderName;
+        List<String> fileList = new ArrayList<>();
+        List<FolderNode> folderList = new ArrayList<>();
+        try {
+            Vector<ChannelSftp.LsEntry> entryVector = channelSftp.ls(absolutePath);
+            entryVector.stream().filter(entry -> !entry.getFilename().startsWith(".")).forEach(entry -> {
+                if (entry.getAttrs().isDir()) {
+                    FolderNode temp = assembleFolderInfo(channelSftp, absolutePath + FileSystems.getDefault().getSeparator() + entry.getFilename(), entry.getFilename());
+                    if (temp != null) {
+                        folderList.add(temp);
+                    }
+                } else {
+                    fileList.add(entry.getFilename());
+                }
+            });
+            if (fileList.size() == 0 && folderList.size() == 0) {
+                return null;
+            }
+            if (fileList.size() != 0) {
+                folderNode.fileNodeList.addAll(fileList);
+            }
+
+            if (folderList.size() != 0) {
+                folderNode.folderNodeList.addAll(folderList);
+            }
+            return folderNode;
+        } catch (SftpException e) {
+            return null;
         }
     }
 }

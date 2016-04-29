@@ -29,6 +29,51 @@
     <script type="text/javascript" src="static/js/right.panel.js"></script>
 </head>
 <body>
+<div class="modal fade" role="dialog" id="transfer_modal" tabindex="-1" aria-labelledby="transfer_modal_label">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h3 class="modal-title">File transfer</h3>
+            </div>
+            <div class="modal-body">
+                <div id="transfer_progress_group">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" role="dialog" id="upload_modal" tabindex="-1" aria-labelledby="upload_modal_label">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h3 class="modal-title">File uploading</h3>
+            </div>
+            <div class="modal-body">
+                <div>
+                    <span class="btn btn-success fileinput-button">
+                        <i class="glyphicon glyphicon-plus"></i>
+                        <span>Select files</span>
+                        <!-- The file input field used as target for the file upload widget -->
+                        <input id="upload_input" type="file" name="files[]" multiple>
+                    </span>
+                    <button type="button" class="btn btn-primary" id="upload-submit">Submit</button>
+                </div>
+                <div id="upload_progress_group" style="margin-top: 15px;">
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" role="dialog" id="info_modal" tabindex="-1" aria-labelledby="info_modal_label">
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
@@ -97,12 +142,7 @@
                 </div>
             </div>
             <div class="panel-footer text-right">
-                <span class="btn btn-success fileinput-button">
-                    <i class="glyphicon glyphicon-plus"></i>
-                    <span>Upload files</span>
-                    <!-- The file input field used as target for the file upload widget -->
-                    <input id="host1-upload" type="file" name="files[]" multiple>
-                </span>
+                <button type="button" class="btn btn-primary" id="host1-upload-btn">Upload</button>
                 <button type="button" class="btn btn-primary" disabled="disabled" id="host1-delete-btn">Delete</button>
                 <button type="button" class="btn btn-primary" disabled="disabled" id="host1-transfer-btn">Transfer</button>
             </div>
@@ -135,23 +175,13 @@
                 </div>
             </div>
             <div class="panel-footer text-right">
-                <span class="btn btn-success fileinput-button">
-                    <i class="glyphicon glyphicon-plus"></i>
-                    <span>Upload files</span>
-                    <!-- The file input field used as target for the file upload widget -->
-                    <input id="host2-upload" type="file" name="files[]" multiple>
-                </span>
+                <button type="button" class="btn btn-primary" id="host2-upload-btn">Upload</button>
                 <button type="button" class="btn btn-primary" disabled="disabled" id="host2-delete-btn">Delete</button>
                 <button type="button" class="btn btn-primary" disabled="disabled" id="host2-transfer-btn">Transfer</button>
             </div>
         </div>
     </div>
     <div class="panel-footer" style="height: 41px">
-        <div id="transferred-file-name" style="float: left;"></div>
-        <div class="progress" style="margin-bottom: 0; padding-left: 0; padding-right: 0">
-            <div id="transferred-file-progress-bar" class="progress-bar progress-bar-info progress-bar-striped" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="width: 0; color: black;">
-            </div>
-        </div>
     </div>
 </div>
 <div id="waiting-box">

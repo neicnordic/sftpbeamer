@@ -78,10 +78,7 @@ a:visited {
 	height: 56px!important;
 	padding: 1em;
 }
-.progress {
-	width: 80%;
-    float: right;
-}
+
 @media screen and (max-width: 991px) {
     .panel-info.host1,
     .panel-info.host2 {

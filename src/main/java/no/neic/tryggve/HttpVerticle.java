@@ -110,40 +110,41 @@ public final class HttpVerticle extends AbstractVerticle {
                     Session session = routingContext.session();
                     String sessionId = session.id();
 
+
                     vertx.executeBlocking(future -> {
                         EventBus bus = vertx.eventBus();
                         ChannelSftp channelSftpFrom = null;
                         ChannelSftp channelSftpTo = null;
 
-
                         try {
                             channelSftpFrom = SftpSessionManager.getManager().openSftpChannel(sessionId, requestJsonBody.getJsonObject("from").getString("name"));
                             channelSftpTo = SftpSessionManager.getManager().openSftpChannel(sessionId, requestJsonBody.getJsonObject("to").getString("name"));
-                            JsonArray fileData = data.getJsonArray("file");
 
-                            for (Object fileName : fileData) {
-                                Utils.transferFile(channelSftpFrom, channelSftpTo, fromPath, toPath, String.class.cast(fileName), bus, messageAddress);
+                            FolderNode root = new FolderNode();
+                            root.folderName = fromPath;
+
+                            for (Object fileName : data.getJsonArray("file")) {
+                                root.fileNodeList.add(fileName.toString());
                             }
 
-                            JsonArray folderData = data.getJsonArray("folder");
-                            for (Object folderName : folderData) {
-                                Utils.transferFolder(channelSftpFrom, channelSftpTo, fromPath, toPath, String.class.cast(folderName), bus, messageAddress);
+
+                            FolderNode folderNode = null;
+                            for (Object folderName : data.getJsonArray("folder")) {
+                                String path = fromPath + FileSystems.getDefault().getSeparator() + folderName;
+                                folderNode = Utils.assembleFolderInfo(channelSftpFrom, path, folderName.toString());
+                                if (folderNode != null) {
+                                    root.folderNodeList.add(folderNode);
+                                }
                             }
+                            root.transfer(channelSftpFrom, fromPath, channelSftpTo, toPath, new ProgressMonitor(bus, messageAddress), bus, messageAddress);
                         } catch (JSchException e) {
-                            e.printStackTrace();
-                        } finally {
-                            if (channelSftpFrom != null && channelSftpFrom.isConnected()) {
-                                channelSftpFrom.disconnect();
-                            }
-                            if (channelSftpTo != null && channelSftpTo.isConnected()) {
-                                channelSftpTo.disconnect();
-                            }
+
                         }
                     }, false, result -> {});
+
                     JsonObject jsonObject = new JsonObject();
                     jsonObject.put("result", "ok");
                     routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(jsonObject.encode());
-
                 });
 
         router.get("/sftp/list").produces("application/json").blockingHandler(routingContext -> {
@@ -184,7 +185,7 @@ public final class HttpVerticle extends AbstractVerticle {
             }
         }, false);
 
-        router.get("/sftp/upload").produces("text/plain").blockingHandler(routingContext -> {
+        router.get("/sftp/upload").produces("text/plain").handler(routingContext -> {
             String source = routingContext.request().getParam(UrlParam.SOURCE);
             String sessionId = routingContext.session().id();
             System.out.println("Session Id " + sessionId);
@@ -201,7 +202,7 @@ public final class HttpVerticle extends AbstractVerticle {
             localMap.put(uuid, jsonObject);
 
             routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(uuid);
-        }, false);
+        });
 
         router.post("/sftp/delete").produces("application/json").blockingHandler(routingContext -> {
             JsonObject requestJsonBody = routingContext.getBodyAsJson();

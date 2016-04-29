@@ -142,21 +142,30 @@ $(document).ready(function () {
                             backdrop: 'static'
                         });
                     } else {
-
+                        $('#transfer_progress_group').empty();
+                        $('#transfer_modal').modal({
+                            keyboard: false,
+                            backdrop: 'static'
+                        });
                         var ws = create_ws_connection();
                         ws.onopen = function () {
                             ws.send(JSON.stringify({
                                 "address": messageAddress}));
                         };
                         ws.onmessage = function (event) {
-                            if (event.data == "done") {
-                                change_modal_property("Information", "File transfer is done.");
-                                $('#info_modal').modal({
-                                    keyboard: false,
-                                    backdrop: 'static'
-                                });
-                            } else {
-                                refresh_progress_bar(JSON.parse(event.data));
+                            var message = JSON.parse(event.data);
+                            if (message["status"] == "start") {
+                                $('#transfer_progress_group').append('<div class="progress"> <div class="progress-bar progress-bar-info progress-bar-striped" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span style="color: black;font-size: medium;">' + message["file"] +'</span> </div></div>');
+                            }
+                            if (message["status"] == "transferring") {
+                                refresh_progress_bar(message);
+                            }
+                            if (message["status"] == "done") {
+                                // change_modal_property("Information", "File transfer is done.");
+                                // $('#info_modal').modal({
+                                //     keyboard: false,
+                                //     backdrop: 'static'
+                                // });
                             }
                         };
                     }
@@ -224,38 +233,26 @@ $(document).ready(function () {
         }
     });
 
-    $('#host1-upload').fileupload({
-        maxChunkSize: 10000000000,
-        multipart: false,
-        type: 'PUT',
-        url: '',
-        dataType: 'json',
-        send: function (e, data) {
-            var fileName = data.data.name;
-        },
-        add: function (e, data) {
-            var result = data;
-            $.ajax({
-                url: "/sftp/upload?source=host1",
-                method: "GET",
-                contents: "text/plain",
-                success: function(reference){
-                    data.headers = {'Reference': reference};
-                    data.url = host1_upload_url;
-                    data.submit();
-                }
-            });
-        },
-        always: function (e, data) {
 
-        },
-        progress: function (e, data) {
-            var progress = parseInt(data.loaded / data.total * 100, 10);
-            $('.progress .progress-bar').css(
-                'width',
-                progress + '%'
-            );
-        }
-    })
+
+    
+    $('#host1-upload-btn').click(function (event) {
+        $.ajax({
+            url: "/sftp/upload?source=host1",
+            method: "GET",
+            contents: "text/plain",
+            success: function(reference){
+                host_upload_reference = reference;
+                uploaded_files_array = [];
+                progress_bar_group = {};
+                upload_url = host1_upload_url;
+                $('#upload_progress_group').empty();
+                $('#upload_modal').modal({
+                    keyboard: false,
+                    backdrop: 'static'
+                });
+            }
+        });
+    });
 
 });
