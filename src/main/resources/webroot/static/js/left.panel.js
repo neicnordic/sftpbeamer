@@ -155,7 +155,7 @@ $(document).ready(function () {
                         ws.onmessage = function (event) {
                             var message = JSON.parse(event.data);
                             if (message["status"] == "start") {
-                                $('#transfer_progress_group').append('<div class="progress"> <div class="progress-bar progress-bar-info progress-bar-striped" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span style="color: black;font-size: medium;">' + message["file"] +'</span> </div></div>');
+                                $('#transfer_progress_group').append('<div class="progress" style="margin-bottom: 10px;"> <div class="progress-bar progress-bar-info progress-bar-striped" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span style="color: black;font-size: medium;">' + message["file"] +'</span> </div></div>');
                             }
                             if (message["status"] == "transferring") {
                                 refresh_progress_bar(message);

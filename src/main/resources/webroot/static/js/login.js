@@ -100,9 +100,9 @@ $(document).ready(function() {
                         backdrop: 'static'
                     });
                 } else {
-                    $("#" + target + "-path").append('<a class="' + target + '-path-link" href="/sftp/list?path=/&source=' + target + '">&laquo;root&raquo;/</a>');
+                    $("#" + target + "-path").append('<a class="' + target + '-path-link" href="/sftp/list?path=' + returnedData["home"] + '&source=' + target + '">&laquo;root&raquo;/</a>');
                     $("#" + target + "-table-div").html('<table id="' + target + '-table" class="table table-striped"></table>');
-                    createTable(target, returnedData["data"]);
+                    createTable(target, returnedData["home"], returnedData["data"]);
                     $("#" + target + "-delete-btn").prop("disabled", false);
                     $("#" + target + "-transfer-btn").prop("disabled", false);
                     $("#" + target + "-disconnect-btn").prop("disabled", false);

@@ -20,6 +20,7 @@ import io.vertx.ext.web.handler.CookieHandler;
 import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.sstore.LocalSessionStore;
+import no.neic.tryggve.constants.HostName;
 import no.neic.tryggve.constants.JsonName;
 import no.neic.tryggve.constants.UrlParam;
 
@@ -71,7 +72,16 @@ public final class HttpVerticle extends AbstractVerticle {
                         }
                         channelSftp = sftpSessionManager.openSftpChannel(sessionId, source);
 
-                        Vector<ChannelSftp.LsEntry> entryVector = channelSftp.ls(FileSystems.getDefault().getSeparator());
+                        String homePath;
+                        if (hostName.equals(HostName.TSD)) {
+                            homePath = FileSystems.getDefault().getSeparator() + userName.split("-")[0];
+                        } else if (hostName.equals(HostName.MOSLER)) {
+                            homePath = FileSystems.getDefault().getSeparator();
+                        } else {
+                            homePath = channelSftp.getHome();
+                        }
+
+                        Vector<ChannelSftp.LsEntry> entryVector = channelSftp.ls(homePath);
                         List<List<String>> entryList = new ArrayList<>(entryVector.size());
                         entryVector.stream().filter(entry -> !entry.getFilename().startsWith(".")).forEach(entry -> {
                             List<String> item = new ArrayList<>(3);
@@ -86,6 +96,7 @@ public final class HttpVerticle extends AbstractVerticle {
                         });
                         JsonObject responseJson = new JsonObject();
                         responseJson.put(JsonName.DATA, new JsonArray(entryList));
+                        responseJson.put(JsonName.HOME, homePath);
                         routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(responseJson.encode());
                     } catch (JSchException | SftpException e) {
                         e.printStackTrace();

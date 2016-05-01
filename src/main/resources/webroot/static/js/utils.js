@@ -10,7 +10,7 @@ var uploaded_files_array;
 var progress_bar_group;
 var upload_url;
 
-function createTable(name, content) {
+function createTable(name, home, content) {
     if (name == 'host1') {
         host1_table = $("#host1-table").dataTable({
             "pagingType": "simple",
@@ -30,7 +30,7 @@ function createTable(name, content) {
                 "render": function (data, type, full, meta) {
                     var isFoler = full[2];
                     if (isFoler == "folder") {
-                        return '<i class="fa fa-folder-o"></i> <a class="host1-folder-link" href="/sftp/list?path=/' + data + '&source=host1"> ' + data + '</a>';
+                        return '<i class="fa fa-folder-o"></i> <a class="host1-folder-link" href="/sftp/list?path=' + home + '/' + data + '&source=host1"> ' + data + '</a>';
                     } else {
                         return '<i class="fa fa-file-o"></i> ' + data;
                     }
@@ -60,7 +60,7 @@ function createTable(name, content) {
                 "render": function (data, type, full, meta) {
                     var isFolder = full[2];
                     if (isFolder == "folder") {
-                        return '<i class="fa fa-folder-o"></i> <a class="host2-folder-link" href="/sftp/list?path=/' + data + '&source=host2"> ' + data + '</a>';
+                        return '<i class="fa fa-folder-o"></i> <a class="host2-folder-link" href="/sftp/list?path=' + home + '/' + data + '&source=host2"> ' + data + '</a>';
                     } else {
                         return '<i class="fa fa-file-o"></i> ' + data;
                     }
@@ -227,7 +227,7 @@ $('#upload_input').fileupload({
         var fileName = data.files[0].name;
         var upload_progress_group = $('#upload_progress_group');
         var progress_bar_index = upload_progress_group.children().length + 1;
-        upload_progress_group.append('<div class="progress"> <div class="progress-bar progress-bar-info progress-bar-striped" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span style="color: black;font-size: medium;">' + fileName +'</span> </div></div>');
+        upload_progress_group.append('<div class="progress" style="margin-bottom: 10px;"> <div class="progress-bar progress-bar-info progress-bar-striped" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span style="color: black;font-size: medium;">' + fileName +'</span> </div></div>');
         progress_bar_group[fileName] = progress_bar_index;
         uploaded_files_array.push(data);
     },
