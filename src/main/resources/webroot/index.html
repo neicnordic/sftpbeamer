@@ -27,6 +27,7 @@
     <script type="text/javascript" src="static/js/login.js"></script>
     <script type="text/javascript" src="static/js/left.panel.js"></script>
     <script type="text/javascript" src="static/js/right.panel.js"></script>
+    <script type="text/javascript" src="static/js/commons.js"></script>
 </head>
 <body>
 <div class="modal fade" role="dialog" id="transfer_modal" tabindex="-1" aria-labelledby="transfer_modal_label">
@@ -63,7 +64,7 @@
                         <!-- The file input field used as target for the file upload widget -->
                         <input id="upload_input" type="file" name="files[]" multiple>
                     </span>
-                    <button type="button" class="btn btn-primary" id="upload-submit">Submit</button>
+                    <button type="button" class="btn btn-primary" id="upload-submit" disabled>Submit</button>
                 </div>
                 <div id="upload_progress_group" style="margin-top: 15px;">
                 </div>

@@ -16,15 +16,20 @@ public final class WebSocketVerticle extends AbstractVerticle {
             if (serverWebSocket.path().equals("/ws")) {
 
                 serverWebSocket.handler(buffer -> {
-                    JsonObject jsonObject = buffer.toJsonObject();
-                    String address = jsonObject.getString("address");
-                    EventBus bus = vertx.eventBus();
-                    MessageConsumer<String> consumer = bus.consumer(address);
+
+                    MessageConsumer<String> consumer = vertx.eventBus().consumer(buffer.toJsonObject().getString("address"));
                     consumer.handler(message -> {
                         String str = message.body();
                         serverWebSocket.writeFinalTextFrame(str);
+                        JsonObject jsonObject = new JsonObject(str);
+                        if (jsonObject.getString("status").equals("done")) {
+                            serverWebSocket.close();
+                            consumer.unregister();
+                        }
                     });
                 });
+
+
             } else {
                 serverWebSocket.reject();
             }

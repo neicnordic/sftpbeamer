@@ -2,7 +2,6 @@
  * Created by xiaxi on 14/04/16.
  */
 $(document).ready(function () {
-    var host2_upload_url;
 
     $("#host2-table-div").on('click', 'tbody>tr', function () {
         $(this).toggleClass('selected');
@@ -146,6 +145,7 @@ $(document).ready(function () {
                             keyboard: false,
                             backdrop: 'static'
                         });
+                        $('#transfer_modal').on('hide.bs.modal', {host: "host1"}, refresh_target_host);
                         var ws = create_ws_connection();
                         ws.onopen = function () {
                             ws.send(JSON.stringify({
@@ -160,13 +160,15 @@ $(document).ready(function () {
                                 refresh_progress_bar(message);
                             }
                             if (message["status"] == "done") {
-                                // change_modal_property("Information", "File transfer is done.");
-                                // $('#info_modal').modal({
-                                //     keyboard: false,
-                                //     backdrop: 'static'
-                                // });
+                                change_modal_property("Information", "File transfer is done.");
+                                $('#info_modal').modal({
+                                    keyboard: false,
+                                    backdrop: 'static'
+                                });
                             }
                         };
+                        ws.onclose = function () {
+                        }
                     }
                 }
             });
@@ -241,11 +243,16 @@ $(document).ready(function () {
                 host_upload_reference = reference;
                 uploaded_files_array = [];
                 progress_bar_group = {};
-                upload_url = host1_upload_url;
+                upload_url = host2_upload_url;
                 $('#upload_progress_group').empty();
                 $('#upload_modal').modal({
                     keyboard: false,
                     backdrop: 'static'
+                });
+                $('#upload_modal').on('hide.bs.modal', {host: "host2"}, function (event) {
+                    if (uploaded_files_array.length != 0) {
+                        refresh_target_host(event);
+                    }
                 });
             }
         });

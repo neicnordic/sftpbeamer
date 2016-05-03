@@ -9,6 +9,8 @@ var host_upload_reference;
 var uploaded_files_array;
 var progress_bar_group;
 var upload_url;
+var host1_upload_url;
+var host2_upload_url;
 
 function createTable(name, home, content) {
     if (name == 'host1') {
@@ -99,14 +101,17 @@ function create_ws_connection() {
 }
 
 function refresh_progress_bar(message) {
-    var transfer_progress_group = $('#transfer_progress_group .progress:last-child .progress-bar');
+    var transfer_progress_bar = $('#transfer_progress_group .progress:last-child .progress-bar');
     var transferred_bytes = Number(message["transferred_bytes"]);
     var total_bytes = Number(message["total_bytes"]);
+    var file_name = message["file_name"];
     if (transferred_bytes == total_bytes) {
-        transfer_progress_group.css("width", '100%');
+        transfer_progress_bar.css("width", '100%');
+        transfer_progress_bar.find("span").text("100% " + file_name);
     } else {
         var percentage = Math.round(transferred_bytes / total_bytes * 100);
-        transfer_progress_group.css("width", percentage + '%');
+        transfer_progress_bar.css("width", percentage + '%');
+        transfer_progress_bar.find("span").text(percentage + '% ' + file_name);
     }
 }
 
@@ -209,35 +214,21 @@ function reloadTableData(updatedData, path, source) {
     set_table(source, $("#" + source + "-table").dataTable(settings));
 }
 
-$('#upload-submit').click(function (event) {
-    for (var i = 0; i < uploaded_files_array.length; i++) {
-        uploaded_files_array[i].submit();
+function refresh_target_host(event) {
+    var href;
+    if (event.data.host == 'host1') {
+        href = $(".host1-path-link").last().attr("href");
     }
-});
-
-$('#upload_input').fileupload({
-    maxChunkSize: 10000000000,
-    multipart: false,
-    type: 'PUT',
-    url: '',
-    dataType: 'json',
-    add: function (e, data) {
-        data.url = upload_url;
-        data.headers = {'Reference': host_upload_reference};
-        var fileName = data.files[0].name;
-        var upload_progress_group = $('#upload_progress_group');
-        var progress_bar_index = upload_progress_group.children().length + 1;
-        upload_progress_group.append('<div class="progress" style="margin-bottom: 10px;"> <div class="progress-bar progress-bar-info progress-bar-striped" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span style="color: black;font-size: medium;">' + fileName +'</span> </div></div>');
-        progress_bar_group[fileName] = progress_bar_index;
-        uploaded_files_array.push(data);
-    },
-    progress: function (e, data) {
-        var progress = parseInt(data.loaded / data.total * 100, 10);
-        var fileName = data.files[0].name;
-        var progress_bar_index = progress_bar_group[fileName];
-        $('#upload_progress_group div:nth-child(' + progress_bar_index + ') .progress-bar').css(
-            'width',
-            progress + '%'
-        );
+    if (event.data.host == 'host2') {
+        href = $(".host2-path-link").last().attr("href");
     }
-});
+    $.ajax({
+        type: "GET",
+        url: href,
+        dataType: "json",
+        success: function (returnedData) {
+            var path = returnedData["path"];
+            reloadTableData(returnedData["data"], path, event.data.host);
+        }
+    });
+}

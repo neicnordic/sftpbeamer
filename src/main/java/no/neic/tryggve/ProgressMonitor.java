@@ -29,6 +29,7 @@ public final class ProgressMonitor implements SftpProgressMonitor {
         jsonObject.put("status", "transferring");
         jsonObject.put("transferred_bytes", transferredSize);
         jsonObject.put("total_bytes", fileSize);
+        jsonObject.put("file_name", this.fileName);
         bus.publish(address, jsonObject.encode());
 
         return true;
@@ -36,8 +37,6 @@ public final class ProgressMonitor implements SftpProgressMonitor {
 
     @Override
     public void end() {
-        JsonObject jsonObject = new JsonObject();
-        jsonObject.put("status", "done");
-        bus.publish(address, jsonObject.encode());
+        transferredSize = 0;
     }
 }

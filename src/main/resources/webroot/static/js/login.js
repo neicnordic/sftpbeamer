@@ -110,6 +110,12 @@ $(document).ready(function() {
                     $("#" + target + "-username").prop("disabled", true);
                     $("#" + target + "-hostname").prop("disabled", true);
                     $("#" + target + "-port").prop("disabled", true);
+                    if (target == "host1") {
+                        host1_upload_url = "http://" + server_name + ":8082/upload?path=" + extractPath($(".host1-path-link").last().attr("href"));
+                    }
+                    if (target == "host2") {
+                        host2_upload_url = "http://" + server_name + ":8082/upload?path=" + extractPath($(".host2-path-link").last().attr("href"));
+                    }
                 }
             },
             dataType: "json",

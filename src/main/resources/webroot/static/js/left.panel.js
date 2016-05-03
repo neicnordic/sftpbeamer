@@ -2,7 +2,6 @@
  * Created by xiaxi on 14/04/16.
  */
 $(document).ready(function () {
-    var host1_upload_url;
 
     $("#host1-table-div").on('click', 'tbody>tr', function () {
         $(this).toggleClass('selected');
@@ -147,6 +146,7 @@ $(document).ready(function () {
                             keyboard: false,
                             backdrop: 'static'
                         });
+                        $('#transfer_modal').on('hide.bs.modal', {host: "host2"}, refresh_target_host);
                         var ws = create_ws_connection();
                         ws.onopen = function () {
                             ws.send(JSON.stringify({
@@ -161,13 +161,15 @@ $(document).ready(function () {
                                 refresh_progress_bar(message);
                             }
                             if (message["status"] == "done") {
-                                // change_modal_property("Information", "File transfer is done.");
-                                // $('#info_modal').modal({
-                                //     keyboard: false,
-                                //     backdrop: 'static'
-                                // });
+                                change_modal_property("Information", "File transfer is done.");
+                                $('#info_modal').modal({
+                                    keyboard: false,
+                                    backdrop: 'static'
+                                });
                             }
                         };
+                        ws.onclose = function () {
+                        }
                     }
                 }
             });
@@ -250,6 +252,11 @@ $(document).ready(function () {
                 $('#upload_modal').modal({
                     keyboard: false,
                     backdrop: 'static'
+                });
+                $('#upload_modal').on('hide.bs.modal', {host: "host1"}, function (event) {
+                    if (uploaded_files_array.length != 0) {
+                        refresh_target_host(event);
+                    }
                 });
             }
         });

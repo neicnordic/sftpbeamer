@@ -45,23 +45,34 @@ public final class UploadVerticle extends AbstractVerticle{
                 System.out.println("Session Id " + sessionId);
                 String source = jsonObject.getString("source");
                 System.out.println("Source " + source);
-                ChannelSftp channelSftp;
+                ChannelSftp channelSftp = null;
+
 
                 try {
                     channelSftp = SftpSessionManager.getManager().openSftpChannel(sessionId, source);
+                    ChannelSftp temp = channelSftp;
+                    OutputStream ops = temp.put(path + FileSystems.getDefault().getSeparator() + fileName);
 
-                    OutputStream ops = channelSftp.put(path + FileSystems.getDefault().getSeparator() + fileName);
                     httpServerRequest.handler(buffer -> {
                         try {
                             ops.write(buffer.getBytes());
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
+                    }).endHandler(aVoid -> {
+                        if (temp.isConnected()) {
+                            temp.disconnect();
+                        }
+                        httpServerRequest.response().end();
                     });
-                    httpServerRequest.endHandler(aVoid -> httpServerRequest.response().end());
                 } catch (JSchException | SftpException e) {
                     e.printStackTrace();
+                    logger.error(e);
+                    if (channelSftp != null && channelSftp.isConnected()) {
+                        channelSftp.disconnect();
+                    }
                 }
+
             } else {
                 httpServerRequest.response().end();
             }

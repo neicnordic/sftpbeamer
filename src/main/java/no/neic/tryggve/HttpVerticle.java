@@ -148,8 +148,16 @@ public final class HttpVerticle extends AbstractVerticle {
                                 }
                             }
                             root.transfer(channelSftpFrom, fromPath, channelSftpTo, toPath, new ProgressMonitor(bus, messageAddress), bus, messageAddress);
+                            bus.publish(messageAddress, new JsonObject().put("status", "done").encode());
                         } catch (JSchException e) {
-
+                            logger.error(e);
+                        } finally {
+                            if (channelSftpFrom != null && channelSftpFrom.isConnected()) {
+                                channelSftpFrom.disconnect();
+                            }
+                            if (channelSftpTo != null && channelSftpTo.isConnected()) {
+                                channelSftpTo.disconnect();
+                            }
                         }
                     }, false, result -> {});
 
