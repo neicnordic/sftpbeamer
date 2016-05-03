@@ -105,6 +105,7 @@ $(document).ready(function() {
                     createTable(target, returnedData["home"], returnedData["data"]);
                     $("#" + target + "-delete-btn").prop("disabled", false);
                     $("#" + target + "-transfer-btn").prop("disabled", false);
+                    $("#" + target + "-upload-btn").prop("disabled", false);
                     $("#" + target + "-disconnect-btn").prop("disabled", false);
                     $("#" + target + "-submit-btn").prop("disabled", true);
                     $("#" + target + "-username").prop("disabled", true);
