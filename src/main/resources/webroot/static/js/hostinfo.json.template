@@ -1,4 +1,5 @@
 {
+    "server": "localhost",
     "hosts": {
         "host1": "HOST1",
         "host2": "HOST2"
