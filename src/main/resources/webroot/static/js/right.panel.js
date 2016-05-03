@@ -243,6 +243,7 @@ $(document).ready(function () {
                 host_upload_reference = reference;
                 uploaded_files_array = [];
                 progress_bar_group = {};
+                finished_upload_array = [];
                 upload_url = host2_upload_url;
                 $('#upload_progress_group').empty();
                 $('#upload_modal').modal({
@@ -250,9 +251,7 @@ $(document).ready(function () {
                     backdrop: 'static'
                 });
                 $('#upload_modal').on('hide.bs.modal', {host: "host2"}, function (event) {
-                    if (uploaded_files_array.length != 0) {
-                        refresh_target_host(event);
-                    }
+                    refresh_target_host(event);
                 });
             }
         });

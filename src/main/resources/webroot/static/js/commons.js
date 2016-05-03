@@ -3,8 +3,8 @@
  */
 $(document).ready(function () {
     $('#upload-submit').click(function (event) {
-        for (var i = 0; i < uploaded_files_array.length; i++) {
-            uploaded_files_array[i].submit();
+        while(uploaded_files_array.length > 0) {
+            uploaded_files_array.pop().submit();
         }
         $(this).attr('disabled' , true);
     });
@@ -29,6 +29,7 @@ $(document).ready(function () {
         if (upload_progress_group.children().length != 0) {
             upload_progress_group.empty();
             uploaded_files_array = [];
+            finished_upload_array = [];
             progress_bar_group = {};
         }
     });
@@ -58,6 +59,16 @@ $(document).ready(function () {
                 progress + '%'
             );
             $('#upload_progress_group div:nth-child(' + progress_bar_index + ') .progress-bar span').text(progress + '% ' + fileName);
+        },
+        always: function (e, data) {
+            finished_upload_array.push(data);
+            if (finished_upload_array.length == Object.keys(progress_bar_group).length) {
+                change_modal_property("Information", "Uploading is done.");
+                $('#info_modal').modal({
+                    keyboard: false,
+                    backdrop: 'static'
+                });
+            }
         }
     });
     
