@@ -35,7 +35,7 @@ public final class Utils {
     public static ChannelSftp createSftpChannel(Session session) throws JSchException {
         ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
         channelSftp.setBulkRequests(128);
-//        channelSftp.setInputStream(new ByteArrayInputStream(new byte[32768]));
+        channelSftp.setInputStream(new ByteArrayInputStream(new byte[32768]));
         channelSftp.setOutputStream(new ByteArrayOutputStream(32768));
         channelSftp.connect();
         return channelSftp;
@@ -198,5 +198,19 @@ public final class Utils {
         } catch (SftpException e) {
             return null;
         }
+    }
+
+    public static void deleteFolder(String folderPath, ChannelSftp channelSftp) throws SftpException{
+        Vector<ChannelSftp.LsEntry> entries = channelSftp.ls(folderPath);
+        for (ChannelSftp.LsEntry entry : entries) {
+            if (!entry.getFilename().startsWith(".")) {
+                if (entry.getAttrs().isDir()) {
+                    deleteFolder(folderPath + FileSystems.getDefault().getSeparator() + entry.getFilename(), channelSftp);
+                } else {
+                    channelSftp.rm(folderPath + FileSystems.getDefault().getSeparator() + entry.getFilename());
+                }
+            }
+        }
+        channelSftp.rmdir(folderPath);
     }
 }
