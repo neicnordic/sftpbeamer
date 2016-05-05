@@ -10,6 +10,7 @@ import io.vertx.ext.web.handler.CookieHandler;
 import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.sstore.LocalSessionStore;
+import no.neic.tryggve.constants.ConfigName;
 
 public final class HttpVerticle extends AbstractVerticle {
 
@@ -42,7 +43,9 @@ public final class HttpVerticle extends AbstractVerticle {
         router.route().handler(StaticHandler.create());
         router.route("/static/*").handler(StaticHandler.create());
 
-        httpServer.requestHandler(router::accept).listen(8080);
+        httpServer.requestHandler(router::accept).listen(
+                Integer.parseInt(Config.valueOf(ConfigName.HTTP_VERTICLE_PORT)),
+                Config.valueOf(ConfigName.HOST));
 
     }
 }

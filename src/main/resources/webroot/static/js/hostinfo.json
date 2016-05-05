@@ -1,5 +1,10 @@
 {
-  "server": "localhost",
+  "server": {
+    "name": "localhost",
+    "ws_port": 8081,
+    "upload_port": 8082,
+    "ssl": false
+  },
   "hosts": {
     "host1": "tsd-fx01.tsd.usit.no",
     "host2": "mosler.bils.se"

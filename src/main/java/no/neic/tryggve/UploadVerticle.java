@@ -44,6 +44,7 @@ public final class UploadVerticle extends AbstractVerticle{
                 String sessionId = jsonObject.getString("session_id");
                 System.out.println("Session Id " + sessionId);
                 String source = jsonObject.getString("source");
+                localMap.remove(reference);
                 System.out.println("Source " + source);
                 ChannelSftp channelSftp = null;
 
@@ -76,7 +77,8 @@ public final class UploadVerticle extends AbstractVerticle{
             } else {
                 httpServerRequest.response().end();
             }
-        }).listen(8082);
+        }).listen(Integer.parseInt(Config.valueOf(ConfigName.UPLOAD_VERTICLE_PORT)),
+                Config.valueOf(ConfigName.HOST));
     }
 
     @Override

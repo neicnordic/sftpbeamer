@@ -40,7 +40,7 @@ $(document).ready(function () {
                 } else {
                     var path = returnedData["path"];
                     $("#host2-path").append('<a class="host2-path-link" href="/sftp/list?path=' + path + '&source=host2">' + folder_name + '/</a>');
-                    host2_upload_url = "http://" + server_name + ":8082/upload?path=" + extractPath($(".host2-path-link").last().attr("href"));
+                    host2_upload_url = createUploadUrl("host2");
                     reloadTableData(returnedData["data"], path, "host2");
                 }
             }
@@ -79,7 +79,7 @@ $(document).ready(function () {
                             $(this).remove();
                         }
                     });
-                    host2_upload_url = "http://" + server_name + ":8082/upload?path=" + extractPath($(".host2-path-link").last().attr("href"));
+                    host2_upload_url = createUploadUrl("host2");
                     reloadTableData(returnedData["data"], path, "host2");
                 }
             }

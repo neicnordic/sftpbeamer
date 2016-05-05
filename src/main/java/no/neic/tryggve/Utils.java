@@ -213,4 +213,20 @@ public final class Utils {
         }
         channelSftp.rmdir(folderPath);
     }
+
+    public static List<List<String>> assembleFolderContent(Vector<ChannelSftp.LsEntry> entryVector) {
+        List<List<String>> entryList = new ArrayList<>(entryVector.size());
+        entryVector.stream().filter(entry -> !entry.getFilename().startsWith(".")).forEach(entry -> {
+            List<String> item = new ArrayList<>(3);
+            item.add(entry.getFilename());
+            item.add(String.valueOf(entry.getAttrs().getSize()));
+            if (entry.getAttrs().isDir()) {
+                item.add("folder");
+            } else {
+                item.add("file");
+            }
+            entryList.add(item);
+        });
+        return entryList;
+    }
 }

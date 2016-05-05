@@ -3,7 +3,7 @@
  */
 var host1_table;
 var host2_table;
-var server_name;
+var server_info;
 
 var host_upload_reference;
 var uploaded_files_array;
@@ -92,7 +92,12 @@ function disable_waiting_box() {
 
 function create_ws_connection() {
     // This is for local testing
-    var endpoint = 'ws://' + server_name + ':8081/ws';
+    var endpoint
+    if (server_info['ssl']) {
+        endpoint = 'wss://' + server_info['name'] + ':' + server_info['ws_port'] + '/ws';
+    } else {
+        endpoint = 'ws://' + server_info['name'] + ':' + server_info['ws_port'] + '/ws';
+    }
     // This is for testing server without ssl
     // var endpoint = 'ws://tryggve.cbu.uib.no:80/websocket';
     //This is for testing server with ssl
@@ -233,4 +238,19 @@ function refresh_target_host(event) {
             reloadTableData(returnedData["data"], path, event.data.host);
         }
     });
+}
+
+function createUploadUrl(target) {
+    var schema;
+    if (server_info['ssl']) {
+        schema = "https";
+    } else {
+        schema = "http";
+    }
+    if (target == 'host1') {
+        return schema + "://" + server_info['name'] + ":" + server_info['upload_port'] + "/upload?path=" + extractPath($(".host1-path-link").last().attr("href"));
+    }
+    if (target == 'host2') {
+        return schema + "://" + server_info['name'] + ":" + server_info['upload_port'] + "/upload?path=" + extractPath($(".host2-path-link").last().attr("href"));
+    }
 }

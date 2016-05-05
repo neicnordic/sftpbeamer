@@ -18,7 +18,6 @@ import no.neic.tryggve.constants.JsonName;
 import no.neic.tryggve.constants.UrlParam;
 
 import java.nio.file.FileSystems;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.Vector;
@@ -59,18 +58,7 @@ public final class HttpRequestFacade {
             }
 
             Vector<ChannelSftp.LsEntry> entryVector = channelSftp.ls(homePath);
-            List<List<String>> entryList = new ArrayList<>(entryVector.size());
-            entryVector.stream().filter(entry -> !entry.getFilename().startsWith(".")).forEach(entry -> {
-                List<String> item = new ArrayList<>(3);
-                item.add(entry.getFilename());
-                item.add(String.valueOf(entry.getAttrs().getSize()));
-                if (entry.getAttrs().isDir()) {
-                    item.add("folder");
-                } else {
-                    item.add("file");
-                }
-                entryList.add(item);
-            });
+            List<List<String>> entryList = Utils.assembleFolderContent(entryVector);
             JsonObject responseJson = new JsonObject();
             responseJson.put(JsonName.DATA, new JsonArray(entryList));
             responseJson.put(JsonName.HOME, homePath);
@@ -152,18 +140,7 @@ public final class HttpRequestFacade {
             channelSftp = SftpSessionManager.getManager().openSftpChannel(sessionId, source);
 
             Vector<ChannelSftp.LsEntry> entryVector = channelSftp.ls(path);
-            List<List<String>> entryList = new ArrayList<>(entryVector.size());
-            entryVector.stream().filter(entry -> !entry.getFilename().startsWith(".")).forEach(entry -> {
-                List<String> item = new ArrayList<>(3);
-                item.add(entry.getFilename());
-                item.add(String.valueOf(entry.getAttrs().getSize()));
-                if (entry.getAttrs().isDir()) {
-                    item.add("folder");
-                } else {
-                    item.add("file");
-                }
-                entryList.add(item);
-            });
+            List<List<String>> entryList = Utils.assembleFolderContent(entryVector);
             JsonObject responseJson = new JsonObject();
             responseJson.put(JsonName.DATA, new JsonArray(entryList));
             responseJson.put(JsonName.PATH, path);

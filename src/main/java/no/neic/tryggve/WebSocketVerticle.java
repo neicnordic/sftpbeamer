@@ -6,6 +6,7 @@ import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import no.neic.tryggve.constants.ConfigName;
 
 public final class WebSocketVerticle extends AbstractVerticle {
     private static final Logger logger = LoggerFactory.getLogger(WebSocketVerticle.class);
@@ -33,7 +34,8 @@ public final class WebSocketVerticle extends AbstractVerticle {
             } else {
                 serverWebSocket.reject();
             }
-        }).listen(8081);
+        }).listen(Integer.parseInt(Config.valueOf(ConfigName.WEBSOCKET_VERTICLE_PORT)),
+                Config.valueOf(ConfigName.HOST));
     }
 
     @Override
