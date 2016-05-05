@@ -243,7 +243,6 @@ $(document).ready(function () {
                 host_upload_reference = reference;
                 uploaded_files_array = [];
                 progress_bar_group = {};
-                finished_upload_array = [];
                 upload_url = host2_upload_url;
                 $('#upload_progress_group').empty();
                 $('#upload_modal').modal({

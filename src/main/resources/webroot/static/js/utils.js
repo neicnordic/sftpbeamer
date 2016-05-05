@@ -7,7 +7,6 @@ var server_info;
 
 var host_upload_reference;
 var uploaded_files_array;
-var finished_upload_array;
 var progress_bar_group;
 var upload_url;
 var host1_upload_url;

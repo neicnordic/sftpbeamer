@@ -44,7 +44,6 @@ public final class UploadVerticle extends AbstractVerticle{
                 String sessionId = jsonObject.getString("session_id");
                 System.out.println("Session Id " + sessionId);
                 String source = jsonObject.getString("source");
-                localMap.remove(reference);
                 System.out.println("Source " + source);
                 ChannelSftp channelSftp = null;
 
@@ -61,10 +60,10 @@ public final class UploadVerticle extends AbstractVerticle{
                             e.printStackTrace();
                         }
                     }).endHandler(aVoid -> {
+                        httpServerRequest.response().end();
                         if (temp.isConnected()) {
                             temp.disconnect();
                         }
-                        httpServerRequest.response().end();
                     });
                 } catch (JSchException | SftpException e) {
                     e.printStackTrace();
