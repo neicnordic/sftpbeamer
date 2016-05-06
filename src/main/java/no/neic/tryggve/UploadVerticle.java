@@ -25,7 +25,13 @@ public final class UploadVerticle extends AbstractVerticle{
     public void start() throws Exception {
         HttpServer httpServer = vertx.createHttpServer();
         httpServer.requestHandler(httpServerRequest -> {
-            httpServerRequest.response().headers().add("Access-Control-Allow-Origin", "http://" + Config.valueOf(ConfigName.HOST) + ":8080");
+            String schema;
+            if (Config.valueOf(ConfigName.SSL).equals("true")) {
+                schema = "https";
+            } else {
+                schema = "http";
+            }
+            httpServerRequest.response().headers().add("Access-Control-Allow-Origin", schema + "://" + Config.valueOf(ConfigName.HOST) + ":" + Config.valueOf(ConfigName.HTTP_VERTICLE_PORT));
             httpServerRequest.response().headers().add("Access-Control-Allow-Methods", "PUT");
             httpServerRequest.response().headers().add("Access-Control-Allow-Headers", Arrays.<String>asList(new String[]{"Content-Type", "Content-Range", "Content-Disposition", "Content-Description", "Reference"}));
 
