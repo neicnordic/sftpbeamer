@@ -8,13 +8,10 @@ $(document).ready(function() {
     var port;
 
     // Read host-specific configuration info from file.
-    // To create thsi file, to create this file, copy from /static/js/hostinfo.json.template
-    // to /static/js/hostinfo.json, and replace the capitalized values with the appropriate info.
-    var hostinfourl = '/static/js/hostinfo.json';
     var host_info = [];
     $.ajax({
         type: 'GET',
-        url: hostinfourl,
+        url: '/sftp/info',
         dataType: 'json',
         success: function (data) {
             host_info = data;

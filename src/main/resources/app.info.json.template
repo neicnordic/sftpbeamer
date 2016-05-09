@@ -6,8 +6,8 @@
     "ssl": false
   },
   "hosts": {
-    "host1": "tsd-fx01.tsd.usit.no",
-    "host2": "mosler.bils.se"
+    "host1": "HOST1",
+    "host2": "HOST2"
   },
   "loginmodes": {
     "tsd-fx01.tsd.usit.no": "otp",

@@ -160,4 +160,5 @@ logs
 #vertx
 file-uploads
 .vertx
+app.info.json
 

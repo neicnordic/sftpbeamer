@@ -17,6 +17,7 @@ import no.neic.tryggve.constants.HostName;
 import no.neic.tryggve.constants.JsonName;
 import no.neic.tryggve.constants.UrlParam;
 
+import java.io.*;
 import java.nio.file.FileSystems;
 import java.util.List;
 import java.util.UUID;
@@ -24,6 +25,35 @@ import java.util.Vector;
 
 public final class HttpRequestFacade {
     private static final Logger logger = LoggerFactory.getLogger(HttpRequestFacade.class);
+
+    public static void fetchInfoHandler(RoutingContext routingContext) {
+        String appInfo = "./app.info.json";
+        File file = new File(appInfo);
+        StringBuilder sb = new StringBuilder();
+        BufferedReader br = null;
+        try {
+            if (file.exists()) {
+                br = new BufferedReader(new FileReader(appInfo));
+            } else {
+                br = new BufferedReader(new InputStreamReader(HttpRequestFacade.class.getClassLoader().getResourceAsStream("app.info.json")));
+            }
+            String line = br.readLine();
+            while (line != null) {
+                sb.append(line);
+                line = br.readLine();
+            }
+            routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(sb.toString());
+        } catch(IOException e) {
+            logger.error(e);
+            routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {}
+            }
+        }
+    }
 
     public static void loginHandler(RoutingContext routingContext) {
         JsonObject requestJsonBody = routingContext.getBodyAsJson();

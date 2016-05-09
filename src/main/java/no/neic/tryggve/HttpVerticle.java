@@ -28,6 +28,8 @@ public final class HttpVerticle extends AbstractVerticle {
 
         router.route("/sftp/*").handler(BodyHandler.create());
 
+        router.get("/sftp/info").produces("application/json").handler(HttpRequestFacade::fetchInfoHandler);
+
         router.post("/sftp/login").consumes("*/json").produces("application/json").blockingHandler(HttpRequestFacade::loginHandler, false);
 
         router.post("/sftp/transfer").consumes("*/json").produces("application/json").handler(HttpRequestFacade::transferHandler);

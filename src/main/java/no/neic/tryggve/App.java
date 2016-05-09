@@ -10,7 +10,6 @@ import java.io.IOException;
 public class App extends AbstractVerticle {
 
     public static void main(String[] args) throws IOException{
-        System.setProperty("vertx.logger-delegate-factory-class-name", "io.vertx.core.logging.Log4jLogDelegateFactory");
         Config.init();
         Vertx vertx = Vertx.vertx();
         vertx.deployVerticle(HttpVerticle.class.getName());
