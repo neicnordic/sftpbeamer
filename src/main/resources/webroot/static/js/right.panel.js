@@ -145,7 +145,7 @@ $(document).ready(function () {
                             keyboard: false,
                             backdrop: 'static'
                         });
-                        $('#transfer_modal').on('hide.bs.modal', {host: "host1"}, refresh_target_host);
+                        transfer_target = "host1";
                         var ws = create_ws_connection();
                         ws.onopen = function () {
                             ws.send(JSON.stringify({
@@ -235,21 +235,19 @@ $(document).ready(function () {
 
     $('#host2-upload-btn').click(function (event) {
         $.ajax({
-            url: "/sftp/upload?source=host2",
+            url: "/sftp/upload/reference?source=host2",
             method: "GET",
             contents: "text/plain",
             success: function(reference){
                 host_upload_reference = reference;
                 uploaded_files_array = [];
                 progress_bar_group = {};
+                upload_target = "host2";
                 upload_url = host2_upload_url;
                 $('#upload_progress_group').empty();
                 $('#upload_modal').modal({
                     keyboard: false,
                     backdrop: 'static'
-                });
-                $('#upload_modal').on('hide.bs.modal', {host: "host2"}, function (event) {
-                    refresh_target_host(event);
                 });
             }
         });

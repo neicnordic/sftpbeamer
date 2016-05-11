@@ -71,5 +71,19 @@ $(document).ready(function () {
             }
         }
     });
+
+    $('#upload_modal').on('hide.bs.modal', function () {
+        $.ajax({
+            url: "/sftp/upload/reference",
+            method: "DELETE",
+            contentType: "text/plain",
+            data: host_upload_reference
+        });
+        refresh_target_host(upload_target);
+    });
+
+    $('#transfer_modal').on('hide.bs.modal', function () {
+        refresh_target_host(transfer_target);
+    });
     
 });

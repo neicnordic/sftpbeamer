@@ -5,6 +5,8 @@ var host1_table;
 var host2_table;
 var server_info;
 
+var transfer_target;
+var upload_target;
 var host_upload_reference;
 var uploaded_files_array;
 var progress_bar_group;
@@ -220,12 +222,12 @@ function reloadTableData(updatedData, path, source) {
     set_table(source, $("#" + source + "-table").dataTable(settings));
 }
 
-function refresh_target_host(event) {
+function refresh_target_host(target) {
     var href;
-    if (event.data.host == 'host1') {
+    if (target == 'host1') {
         href = $(".host1-path-link").last().attr("href");
     }
-    if (event.data.host == 'host2') {
+    if (target == 'host2') {
         href = $(".host2-path-link").last().attr("href");
     }
     $.ajax({
@@ -234,7 +236,7 @@ function refresh_target_host(event) {
         dataType: "json",
         success: function (returnedData) {
             var path = returnedData["path"];
-            reloadTableData(returnedData["data"], path, event.data.host);
+            reloadTableData(returnedData["data"], path, target);
         }
     });
 }

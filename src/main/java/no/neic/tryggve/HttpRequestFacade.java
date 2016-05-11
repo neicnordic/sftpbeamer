@@ -165,7 +165,7 @@ public final class HttpRequestFacade {
         }
     }
 
-    public static void uploadHandler(RoutingContext routingContext) {
+    public static void getReferenceHandler(RoutingContext routingContext) {
         String source = routingContext.request().getParam(UrlParam.SOURCE);
         String sessionId = routingContext.session().id();
         System.out.println("Session Id " + sessionId);
@@ -182,6 +182,15 @@ public final class HttpRequestFacade {
         localMap.put(uuid, jsonObject);
 
         routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(uuid);
+    }
+
+    public static void deleteReferenceHandler(RoutingContext routingContext) {
+        String reference = routingContext.getBodyAsString();
+        SharedData sharedData = routingContext.vertx().sharedData();
+        LocalMap<String, JsonObject> localMap = sharedData.getLocalMap("upload");
+        System.out.println("Remove reference " + reference);
+        localMap.remove(reference);
+        routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
     }
 
     public static void deleteHandler(RoutingContext routingContext) {
