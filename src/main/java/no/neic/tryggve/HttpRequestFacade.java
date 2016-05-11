@@ -20,6 +20,7 @@ import no.neic.tryggve.constants.UrlParam;
 import java.io.*;
 import java.nio.file.FileSystems;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.Vector;
 
@@ -65,18 +66,17 @@ public final class HttpRequestFacade {
         String source = requestJsonBody.getString(JsonName.SOURCE);
 
 
-        ChannelSftp channelSftp = null;
         try {
             Session session = routingContext.session();
             String sessionId = session.id();
 
-            SftpSessionManager sftpSessionManager = SftpSessionManager.getManager();
+            SftpConnectionManager sftpSessionManager = SftpConnectionManager.getManager();
             if (otc.isEmpty()) {
-                sftpSessionManager.createSftpSession(sessionId, source, userName, password, hostName, Integer.parseInt(port));
+                sftpSessionManager.createSftpConnection(sessionId, source, userName, password, hostName, Integer.parseInt(port));
             } else {
-                sftpSessionManager.createSftpSession(sessionId, source, userName, password, otc, hostName, Integer.parseInt(port));
+                sftpSessionManager.createSftpConnection(sessionId, source, userName, password, otc, hostName, Integer.parseInt(port));
             }
-            channelSftp = sftpSessionManager.openSftpChannel(sessionId, source);
+            Optional<ChannelSftp> optional = sftpSessionManager.getSftpConnection(sessionId, source);
 
             String homePath;
             if (hostName.equals(HostName.TSD)) {
@@ -84,22 +84,18 @@ public final class HttpRequestFacade {
             } else if (hostName.equals(HostName.MOSLER)) {
                 homePath = FileSystems.getDefault().getSeparator();
             } else {
-                homePath = channelSftp.getHome();
+                homePath = optional.get().getHome();
             }
 
-            Vector<ChannelSftp.LsEntry> entryVector = channelSftp.ls(homePath);
+            Vector<ChannelSftp.LsEntry> entryVector = optional.get().ls(homePath);
             List<List<String>> entryList = Utils.assembleFolderContent(entryVector);
             JsonObject responseJson = new JsonObject();
             responseJson.put(JsonName.DATA, new JsonArray(entryList));
             responseJson.put(JsonName.HOME, homePath);
             routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(responseJson.encode());
         } catch (JSchException | SftpException e) {
-            e.printStackTrace();
-            routingContext.response().setStatusCode(HttpResponseStatus.BAD_REQUEST.code()).end();
-        } finally {
-            if (channelSftp != null && channelSftp.isConnected()) {
-                channelSftp.disconnect();
-            }
+            logger.error(e);
+            routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
         }
     }
 
@@ -116,41 +112,30 @@ public final class HttpRequestFacade {
 
         routingContext.vertx().executeBlocking(future -> {
             EventBus bus = routingContext.vertx().eventBus();
-            ChannelSftp channelSftpFrom = null;
-            ChannelSftp channelSftpTo = null;
-
-            try {
-                channelSftpFrom = SftpSessionManager.getManager().openSftpChannel(sessionId, requestJsonBody.getJsonObject("from").getString("name"));
-                channelSftpTo = SftpSessionManager.getManager().openSftpChannel(sessionId, requestJsonBody.getJsonObject("to").getString("name"));
-
-                FolderNode root = new FolderNode();
-                root.folderName = fromPath;
-
-                for (Object fileName : data.getJsonArray("file")) {
-                    root.fileNodeList.add(fileName.toString());
-                }
 
 
-                FolderNode folderNode = null;
-                for (Object folderName : data.getJsonArray("folder")) {
-                    String path = fromPath + FileSystems.getDefault().getSeparator() + folderName;
-                    folderNode = Utils.assembleFolderInfo(channelSftpFrom, path, folderName.toString());
-                    if (folderNode != null) {
-                        root.folderNodeList.add(folderNode);
-                    }
-                }
-                root.transfer(channelSftpFrom, fromPath, channelSftpTo, toPath, new ProgressMonitor(bus, messageAddress), bus, messageAddress);
-                bus.publish(messageAddress, new JsonObject().put("status", "done").encode());
-            } catch (JSchException e) {
-                logger.error(e);
-            } finally {
-                if (channelSftpFrom != null && channelSftpFrom.isConnected()) {
-                    channelSftpFrom.disconnect();
-                }
-                if (channelSftpTo != null && channelSftpTo.isConnected()) {
-                    channelSftpTo.disconnect();
+            Optional<ChannelSftp> channelSftpFrom = SftpConnectionManager.getManager().getSftpConnection(sessionId, requestJsonBody.getJsonObject("from").getString("name"));
+            Optional<ChannelSftp> channelSftpTo = SftpConnectionManager.getManager().getSftpConnection(sessionId, requestJsonBody.getJsonObject("to").getString("name"));
+
+            FolderNode root = new FolderNode();
+            root.folderName = fromPath;
+
+            for (Object fileName : data.getJsonArray("file")) {
+                root.fileNodeList.add(fileName.toString());
+            }
+
+
+            FolderNode folderNode = null;
+            for (Object folderName : data.getJsonArray("folder")) {
+                String path = fromPath + FileSystems.getDefault().getSeparator() + folderName;
+                folderNode = Utils.assembleFolderInfo(channelSftpFrom.get(), path, folderName.toString());
+                if (folderNode != null) {
+                    root.folderNodeList.add(folderNode);
                 }
             }
+            root.transfer(channelSftpFrom.get(), fromPath, channelSftpTo.get(), toPath, new ProgressMonitor(bus, messageAddress), bus, messageAddress);
+            bus.publish(messageAddress, new JsonObject().put("status", "done").encode());
+
         }, false, result -> {});
 
         JsonObject jsonObject = new JsonObject();
@@ -161,27 +146,22 @@ public final class HttpRequestFacade {
     public static void listHandler(RoutingContext routingContext) {
         String path = routingContext.request().getParam(UrlParam.PATH);
         String source = routingContext.request().getParam(UrlParam.SOURCE);
-        ChannelSftp channelSftp = null;
 
         Session session = routingContext.session();
         String sessionId = session.id();
 
         try {
-            channelSftp = SftpSessionManager.getManager().openSftpChannel(sessionId, source);
+            Optional<ChannelSftp> optional = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
 
-            Vector<ChannelSftp.LsEntry> entryVector = channelSftp.ls(path);
+            Vector<ChannelSftp.LsEntry> entryVector = optional.get().ls(path);
             List<List<String>> entryList = Utils.assembleFolderContent(entryVector);
             JsonObject responseJson = new JsonObject();
             responseJson.put(JsonName.DATA, new JsonArray(entryList));
             responseJson.put(JsonName.PATH, path);
             routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(responseJson.encode());
-        } catch (JSchException | SftpException e) {
-            e.printStackTrace();
-            routingContext.response().setStatusCode(HttpResponseStatus.BAD_REQUEST.code()).end();
-        } finally {
-            if (channelSftp != null && channelSftp.isConnected()) {
-                channelSftp.disconnect();
-            }
+        } catch (SftpException e) {
+            logger.error(e);
+            routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
         }
     }
 
@@ -213,30 +193,23 @@ public final class HttpRequestFacade {
         Session session = routingContext.session();
         String sessionId = session.id();
 
-        ChannelSftp channelSftp = null;
         try {
-            channelSftp = SftpSessionManager.getManager().openSftpChannel(sessionId, source);
+            Optional<ChannelSftp> optional = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
 
             JsonObject item;
             for (Object object : data) {
                 item = (JsonObject) object;
                 if (item.getString("type").equals("file")) {
-                    channelSftp.rm(path + FileSystems.getDefault().getSeparator() + item.getString("name"));
+                    optional.get().rm(path + FileSystems.getDefault().getSeparator() + item.getString("name"));
                 } else {
-                    Utils.deleteFolder(path + FileSystems.getDefault().getSeparator() + item.getString("name"), channelSftp);
+                    Utils.deleteFolder(path + FileSystems.getDefault().getSeparator() + item.getString("name"), optional.get());
                 }
             }
             routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
 
-        } catch (JSchException | SftpException e) {
-            e.printStackTrace();
-            JsonObject ex = new JsonObject();
-            ex.put("exception", e.getMessage());
-            routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end(ex.encode());
-        } finally {
-            if (channelSftp != null && channelSftp.isConnected()) {
-                channelSftp.disconnect();
-            }
+        } catch (SftpException e) {
+            logger.error(e);
+            routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
         }
     }
 
@@ -245,7 +218,7 @@ public final class HttpRequestFacade {
 
         Session session = routingContext.session();
         String sessionId = session.id();
-        SftpSessionManager.getManager().disconnectSftp(sessionId, source);
+        SftpConnectionManager.getManager().disconnectSftp(sessionId, source);
         routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
     }
 }

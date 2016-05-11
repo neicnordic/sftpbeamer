@@ -11,69 +11,50 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
-public final class SftpSessionManager {
-    private static final Logger logger = LoggerFactory.getLogger(SftpSessionManager.class);
+public final class SftpConnectionManager {
+    private static final Logger logger = LoggerFactory.getLogger(SftpConnectionManager.class);
 
-    private static SftpSessionManager manager;
+    private static SftpConnectionManager manager;
 
-    public static SftpSessionManager getManager() {
+    public static SftpConnectionManager getManager() {
         if (manager == null) {
-            manager = new SftpSessionManager();
+            manager = new SftpConnectionManager();
         }
         return manager;
     }
 
-    private Map<String, SftpSessionHolder> sftpSessionHolderMap;
+    private Map<String, SftpConnectionHolder> sftpConnectionHolderMap;
     private String HOST1 = "host1";
     private String HOST2 = "host2";
 
-    private SftpSessionManager() {
-        sftpSessionHolderMap = new HashMap<>();
+    private SftpConnectionManager() {
+        sftpConnectionHolderMap = new HashMap<>();
     }
 
-    public void createSftpSession(String sessionId, String source,
-                                  String userName, String password, String otc, String hostName, int port) throws JSchException {
+    public void createSftpConnection(String sessionId, String source,
+                                     String userName, String password, String otc, String hostName, int port) throws JSchException {
         JSch jSch = new JSch();
         Session session = jSch.getSession(userName, hostName, port);
         JSch.setConfig("StrictHostKeyChecking", "no");
         session.setUserInfo(new TwoStepsAuth(password, otc));
         session.connect();
-
-        saveSftpSession(sessionId, source, session);
+        saveSftpConnection(sessionId, source, openSftpChannel(session));
     }
 
-    public void createSftpSession(String sessionId, String source,
-                                  String userName, String password, String hostName, int port) throws JSchException {
+    public void createSftpConnection(String sessionId, String source,
+                                     String userName, String password, String hostName, int port) throws JSchException {
         JSch jSch = new JSch();
         Session session = jSch.getSession(userName, hostName, port);
         JSch.setConfig("StrictHostKeyChecking", "no");
         session.setUserInfo(new OneStepAuth(password));
         session.connect();
-
-        saveSftpSession(sessionId, source, session);
+        saveSftpConnection(sessionId, source, openSftpChannel(session));
     }
 
-    public void disconnectSftp(String sessionId, String source) {
-        if (sftpSessionHolderMap.containsKey(sessionId)) {
-            if (source.equals(HOST1) && sftpSessionHolderMap.get(sessionId).getHost1() != null) {
-                sftpSessionHolderMap.get(sessionId).getHost1().disconnect();
-                sftpSessionHolderMap.get(sessionId).setHost1(null);
-            }
-            if (source.equals(HOST2) && sftpSessionHolderMap.get(sessionId).getHost2() != null) {
-                sftpSessionHolderMap.get(sessionId).getHost2().disconnect();
-                sftpSessionHolderMap.get(sessionId).setHost2(null);
-            }
-        }
-    }
-
-    public ChannelSftp openSftpChannel(String sessionId, String source) throws JSchException{
-        ChannelSftp channelSftp;
-        if (source.equals(HOST1)) {
-            channelSftp = (ChannelSftp) sftpSessionHolderMap.get(sessionId).getHost1().openChannel("sftp");
-        } else {
-            channelSftp = (ChannelSftp) sftpSessionHolderMap.get(sessionId).getHost2().openChannel("sftp");
-        }
+    private ChannelSftp openSftpChannel(Session session) throws JSchException{
+        ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
         channelSftp.setBulkRequests(128);
         channelSftp.setInputStream(new ByteArrayInputStream(new byte[32768]));
         channelSftp.setOutputStream(new ByteArrayOutputStream(32768));
@@ -81,45 +62,69 @@ public final class SftpSessionManager {
         return channelSftp;
     }
 
-    private void saveSftpSession(String sessionId, String source, Session session) {
-        if (sftpSessionHolderMap.containsKey(sessionId)) {
+    public Optional<ChannelSftp> getSftpConnection(String sessionId, String source) {
+        if (source.equals(HOST1)) {
+            return Optional.of(this.sftpConnectionHolderMap.get(sessionId).getHost1());
+        } else if (source.equals(HOST2)) {
+            return Optional.of(this.sftpConnectionHolderMap.get(sessionId).getHost2());
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    public void disconnectSftp(String sessionId, String source) {
+        if (sftpConnectionHolderMap.containsKey(sessionId)) {
+            if (source.equals(HOST1) && sftpConnectionHolderMap.get(sessionId).getHost1() != null) {
+                sftpConnectionHolderMap.get(sessionId).getHost1().disconnect();
+                sftpConnectionHolderMap.get(sessionId).setHost1(null);
+            }
+            if (source.equals(HOST2) && sftpConnectionHolderMap.get(sessionId).getHost2() != null) {
+                sftpConnectionHolderMap.get(sessionId).getHost2().disconnect();
+                sftpConnectionHolderMap.get(sessionId).setHost2(null);
+            }
+        }
+
+    }
+
+    private void saveSftpConnection(String sessionId, String source, ChannelSftp channelSftp) {
+        if (sftpConnectionHolderMap.containsKey(sessionId)) {
             if (source.equals(HOST1)) {
-                sftpSessionHolderMap.get(sessionId).setHost1(session);
+                sftpConnectionHolderMap.get(sessionId).setHost1(channelSftp);
             }
             if (source.equals(HOST2)) {
-                sftpSessionHolderMap.get(sessionId).setHost2(session);
+                sftpConnectionHolderMap.get(sessionId).setHost2(channelSftp);
             }
         } else {
-            SftpSessionHolder holder = new SftpSessionHolder();
+            SftpConnectionHolder holder = new SftpConnectionHolder();
             if (source.equals(HOST1)) {
-                holder.setHost1(session);
+                holder.setHost1(channelSftp);
             }
             if (source.equals(HOST2)) {
-                holder.setHost2(session);
+                holder.setHost2(channelSftp);
             }
-            sftpSessionHolderMap.put(sessionId, holder);
+            sftpConnectionHolderMap.put(sessionId, holder);
         }
     }
 
 
 
-    private class SftpSessionHolder {
-        private Session host1;
-        private Session host2;
+    private class SftpConnectionHolder {
+        private ChannelSftp host1;
+        private ChannelSftp host2;
 
-        public Session getHost1() {
+        public ChannelSftp getHost1() {
             return host1;
         }
 
-        public void setHost1(Session host1) {
+        public void setHost1(ChannelSftp host1) {
             this.host1 = host1;
         }
 
-        public Session getHost2() {
+        public ChannelSftp getHost2() {
             return host2;
         }
 
-        public void setHost2(Session host2) {
+        public void setHost2(ChannelSftp host2) {
             this.host2 = host2;
         }
     }

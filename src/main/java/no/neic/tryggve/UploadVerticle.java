@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.FileSystems;
 import java.util.Arrays;
+import java.util.Optional;
 
 public final class UploadVerticle extends AbstractVerticle{
     private static final Logger logger = LoggerFactory.getLogger(UploadVerticle.class);
@@ -51,32 +52,28 @@ public final class UploadVerticle extends AbstractVerticle{
                 System.out.println("Session Id " + sessionId);
                 String source = jsonObject.getString("source");
                 System.out.println("Source " + source);
-                ChannelSftp channelSftp = null;
+
 
 
                 try {
-                    channelSftp = SftpSessionManager.getManager().openSftpChannel(sessionId, source);
-                    ChannelSftp temp = channelSftp;
-                    OutputStream ops = temp.put(path + FileSystems.getDefault().getSeparator() + fileName);
+                    Optional<ChannelSftp> optional = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
+
+                    OutputStream ops = optional.get().put(path + FileSystems.getDefault().getSeparator() + fileName);
 
                     httpServerRequest.handler(buffer -> {
                         try {
                             ops.write(buffer.getBytes());
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            logger.error(e);
                         }
                     }).endHandler(aVoid -> {
+                        try {
+                            ops.close();
+                        } catch (IOException e) {}
                         httpServerRequest.response().end();
-                        if (temp.isConnected()) {
-                            temp.disconnect();
-                        }
                     });
-                } catch (JSchException | SftpException e) {
-                    e.printStackTrace();
+                } catch (SftpException e) {
                     logger.error(e);
-                    if (channelSftp != null && channelSftp.isConnected()) {
-                        channelSftp.disconnect();
-                    }
                 }
 
             } else {
