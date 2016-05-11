@@ -194,10 +194,9 @@ $(document).ready(function () {
             var path = extractPath($('.host1-path-link:last').attr('href'));
 
             $.ajax({
-                type: "POST",
+                type: "DELETE",
                 url: "/sftp/delete",
                 data: JSON.stringify({"source": "host1", "path": path, "data": transferredData}),
-                dataType: "json",
                 contentType: 'application/json; charset=utf-8',
                 statusCode: {
                     200: function () {
