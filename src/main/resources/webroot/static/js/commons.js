@@ -2,6 +2,12 @@
  * Created by xiaxi on 01/05/16.
  */
 $(document).ready(function () {
+    window.addEventListener("beforeunload", function (e) {
+        logout();
+        return null;
+    });
+
+
     $('#upload-submit').click(function (event) {
         if(uploaded_files_array.length > 0) {
             uploaded_files_array.pop().submit();

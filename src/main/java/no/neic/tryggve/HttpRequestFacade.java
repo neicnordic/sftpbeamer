@@ -224,10 +224,14 @@ public final class HttpRequestFacade {
 
     public static void disconnectHandler(RoutingContext routingContext) {
         String source = routingContext.request().getParam(UrlParam.SOURCE);
-
         Session session = routingContext.session();
         String sessionId = session.id();
-        SftpConnectionManager.getManager().disconnectSftp(sessionId, source);
+        if (source == null || source.isEmpty()) {
+            SftpConnectionManager.getManager().disconnectSftp(sessionId);
+        } else {
+            SftpConnectionManager.getManager().disconnectSftp(sessionId, source);
+        }
+
         routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
     }
 }

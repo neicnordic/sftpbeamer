@@ -86,6 +86,19 @@ public final class SftpConnectionManager {
 
     }
 
+    public void disconnectSftp(String sessionId) {
+        if (sftpConnectionHolderMap.containsKey(sessionId)) {
+            if (sftpConnectionHolderMap.get(sessionId).getHost1() != null) {
+                sftpConnectionHolderMap.get(sessionId).getHost1().disconnect();
+            }
+            if (sftpConnectionHolderMap.get(sessionId).getHost2() != null) {
+                sftpConnectionHolderMap.get(sessionId).getHost2().disconnect();
+            }
+            sftpConnectionHolderMap.remove(sessionId);
+        }
+
+    }
+
     private void saveSftpConnection(String sessionId, String source, ChannelSftp channelSftp) {
         if (sftpConnectionHolderMap.containsKey(sessionId)) {
             if (source.equals(HOST1)) {

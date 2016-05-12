@@ -182,6 +182,13 @@ function disconnect_sftp(source) {
     }
 }
 
+function logout() {
+    $.ajax({
+        type: "DELETE",
+        url: "/sftp/disconnect"
+    });
+}
+
 function reloadTableData(updatedData, path, source) {
     fetch_table(source).api().destroy();
     $("#" + source + "-table").empty();
