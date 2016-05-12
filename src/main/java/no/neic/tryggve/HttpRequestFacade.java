@@ -16,6 +16,7 @@ import io.vertx.ext.web.Session;
 import no.neic.tryggve.constants.HostName;
 import no.neic.tryggve.constants.JsonName;
 import no.neic.tryggve.constants.UrlParam;
+import no.neic.tryggve.constants.VertxConstant;
 
 import java.io.*;
 import java.nio.file.FileSystems;
@@ -120,13 +121,13 @@ public final class HttpRequestFacade {
             FolderNode root = new FolderNode();
             root.folderName = fromPath;
 
-            for (Object fileName : data.getJsonArray("file")) {
+            for (Object fileName : data.getJsonArray(JsonName.FILE)) {
                 root.fileNodeList.add(fileName.toString());
             }
 
 
             FolderNode folderNode = null;
-            for (Object folderName : data.getJsonArray("folder")) {
+            for (Object folderName : data.getJsonArray(JsonName.FOLDER)) {
                 String path = fromPath + FileSystems.getDefault().getSeparator() + folderName;
                 folderNode = Utils.assembleFolderInfo(channelSftpFrom.get(), path, folderName.toString());
                 if (folderNode != null) {
@@ -134,7 +135,7 @@ public final class HttpRequestFacade {
                 }
             }
             root.transfer(channelSftpFrom.get(), fromPath, channelSftpTo.get(), toPath, new ProgressMonitor(bus, messageAddress), bus, messageAddress);
-            bus.publish(messageAddress, new JsonObject().put("status", "done").encode());
+            bus.publish(VertxConstant.TRANSFER_EVENTBUS_NAME, new JsonObject().put(JsonName.STATUS, "done").put(JsonName.ADDRESS, messageAddress).encode());
 
         }, false, result -> {});
 
@@ -168,14 +169,13 @@ public final class HttpRequestFacade {
     public static void getReferenceHandler(RoutingContext routingContext) {
         String source = routingContext.request().getParam(UrlParam.SOURCE);
         String sessionId = routingContext.session().id();
-        System.out.println("Session Id " + sessionId);
+
 
         SharedData sharedData = routingContext.vertx().sharedData();
-        LocalMap<String, JsonObject> localMap = sharedData.getLocalMap("upload");
+        LocalMap<String, JsonObject> localMap = sharedData.getLocalMap(VertxConstant.UPLOAD_LOCALMAP_NAME);
         String uuid = UUID.randomUUID().toString();
 
 
-        System.out.println("Generated reference " + uuid);
         JsonObject jsonObject = new JsonObject();
         jsonObject.put("source", source);
         jsonObject.put("session_id", sessionId);
@@ -187,8 +187,8 @@ public final class HttpRequestFacade {
     public static void deleteReferenceHandler(RoutingContext routingContext) {
         String reference = routingContext.getBodyAsString();
         SharedData sharedData = routingContext.vertx().sharedData();
-        LocalMap<String, JsonObject> localMap = sharedData.getLocalMap("upload");
-        System.out.println("Remove reference " + reference);
+        LocalMap<String, JsonObject> localMap = sharedData.getLocalMap(VertxConstant.UPLOAD_LOCALMAP_NAME);
+
         localMap.remove(reference);
         routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
     }

@@ -12,6 +12,7 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.shareddata.LocalMap;
 import io.vertx.core.shareddata.SharedData;
 import no.neic.tryggve.constants.ConfigName;
+import no.neic.tryggve.constants.VertxConstant;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -39,19 +40,19 @@ public final class UploadVerticle extends AbstractVerticle{
             if (httpServerRequest.method().equals(HttpMethod.PUT) && httpServerRequest.path().startsWith("/upload")) {
                 String fileName = httpServerRequest.getHeader("Content-Disposition").split("filename=")[1];
                 fileName = fileName.substring(1, fileName.length() - 1);
-                System.out.println("File Name " + fileName);
+
                 String reference = httpServerRequest.getHeader("Reference");
-                System.out.println("Reference " + reference);
+
                 String path = httpServerRequest.getParam("Path");
-                System.out.println("Path " + path);
+
 
                 SharedData sharedData = vertx.sharedData();
-                LocalMap<String, JsonObject> localMap = sharedData.getLocalMap("upload");
+                LocalMap<String, JsonObject> localMap = sharedData.getLocalMap(VertxConstant.UPLOAD_LOCALMAP_NAME);
                 JsonObject jsonObject = localMap.get(reference);
                 String sessionId = jsonObject.getString("session_id");
-                System.out.println("Session Id " + sessionId);
+
                 String source = jsonObject.getString("source");
-                System.out.println("Source " + source);
+
 
 
 

@@ -1,33 +1,43 @@
 package no.neic.tryggve;
 
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.eventbus.EventBus;
-import io.vertx.core.eventbus.MessageConsumer;
+import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import no.neic.tryggve.constants.ConfigName;
+import no.neic.tryggve.constants.JsonName;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public final class WebSocketVerticle extends AbstractVerticle {
     private static final Logger logger = LoggerFactory.getLogger(WebSocketVerticle.class);
 
+    private Map<String, ServerWebSocket> webSocketHolder;
+
     @Override
     public void start() throws Exception {
+        webSocketHolder = new HashMap<>();
+        vertx.eventBus().<String>consumer("transfer", message -> {
+
+            JsonObject jsonObject = new JsonObject(message.body());
+            String webSocketAddress = jsonObject.getString(JsonName.ADDRESS);
+            if (webSocketHolder.containsKey(webSocketAddress)) {
+                webSocketHolder.get(webSocketAddress).writeFinalTextFrame(message.body());
+                if (jsonObject.getString(JsonName.STATUS).equals("done")) {
+                    webSocketHolder.remove(webSocketAddress).close();
+                }
+            }
+        });
         vertx.createHttpServer().websocketHandler(serverWebSocket -> {
             if (serverWebSocket.path().equals("/ws")) {
 
                 serverWebSocket.handler(buffer -> {
 
-                    MessageConsumer<String> consumer = vertx.eventBus().consumer(buffer.toJsonObject().getString("address"));
-                    consumer.handler(message -> {
-                        String str = message.body();
-                        serverWebSocket.writeFinalTextFrame(str);
-                        JsonObject jsonObject = new JsonObject(str);
-                        if (jsonObject.getString("status").equals("done")) {
-                            serverWebSocket.close();
-                            consumer.unregister();
-                        }
-                    });
+                    String address = buffer.toJsonObject().getString(JsonName.ADDRESS);
+                    webSocketHolder.put(address, serverWebSocket);
+                    serverWebSocket.writeFinalTextFrame(new JsonObject().put(JsonName.STATUS, "connected").encode());
                 });
 
 

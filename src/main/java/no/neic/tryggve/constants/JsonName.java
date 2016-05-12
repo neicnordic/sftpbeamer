@@ -10,4 +10,11 @@ public final class JsonName {
     public static final String PATH = "path";
     public static final String DATA = "data";
     public static final String HOME = "home";
+    public static final String ADDRESS = "address";
+    public static final String STATUS = "status";
+    public static final String FILE = "file";
+    public static final String FOLDER = "folder";
+    public static final String TRANSFERRED_BYTES = "transferred_bytes";
+    public static final String TOTAL_BYTES = "total_bytes";
+    public static final String FILE_NAME = "file_name";
 }
