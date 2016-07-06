@@ -6,7 +6,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import no.neic.tryggve.constants.ConfigName;
-import no.neic.tryggve.constants.JsonName;
+import no.neic.tryggve.constants.JsonPropertyName;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,10 +22,10 @@ public final class WebSocketVerticle extends AbstractVerticle {
         vertx.eventBus().<String>consumer("transfer", message -> {
 
             JsonObject jsonObject = new JsonObject(message.body());
-            String webSocketAddress = jsonObject.getString(JsonName.ADDRESS);
+            String webSocketAddress = jsonObject.getString(JsonPropertyName.ADDRESS);
             if (webSocketHolder.containsKey(webSocketAddress)) {
                 webSocketHolder.get(webSocketAddress).writeFinalTextFrame(message.body());
-                if (jsonObject.getString(JsonName.STATUS).equals("done")) {
+                if (jsonObject.getString(JsonPropertyName.STATUS).equals("done")) {
                     webSocketHolder.remove(webSocketAddress).close();
                 }
             }
@@ -35,9 +35,9 @@ public final class WebSocketVerticle extends AbstractVerticle {
 
                 serverWebSocket.handler(buffer -> {
 
-                    String address = buffer.toJsonObject().getString(JsonName.ADDRESS);
+                    String address = buffer.toJsonObject().getString(JsonPropertyName.ADDRESS);
                     webSocketHolder.put(address, serverWebSocket);
-                    serverWebSocket.writeFinalTextFrame(new JsonObject().put(JsonName.STATUS, "connected").encode());
+                    serverWebSocket.writeFinalTextFrame(new JsonObject().put(JsonPropertyName.STATUS, "connected").encode());
                 });
 
 

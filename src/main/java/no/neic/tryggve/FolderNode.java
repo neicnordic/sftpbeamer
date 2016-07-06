@@ -6,7 +6,7 @@ import com.jcraft.jsch.SftpProgressMonitor;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import no.neic.tryggve.constants.JsonName;
+import no.neic.tryggve.constants.JsonPropertyName;
 import no.neic.tryggve.constants.VertxConstant;
 
 import java.nio.file.FileSystems;
@@ -66,8 +66,8 @@ public class FolderNode {
         JsonObject jsonObject = new JsonObject();
         for (String fileName : fileNodeList) {
             try {
-                jsonObject.put(JsonName.STATUS, "start").put("address", messageAddress);
-                jsonObject.put(JsonName.FILE, pathFrom + FileSystems.getDefault().getSeparator() + fileName);
+                jsonObject.put(JsonPropertyName.STATUS, "start").put("address", messageAddress);
+                jsonObject.put(JsonPropertyName.FILE, pathFrom + FileSystems.getDefault().getSeparator() + fileName);
                 bus.publish(VertxConstant.TRANSFER_EVENTBUS_NAME, jsonObject.encode());
                 channelSftpFrom.get(pathFrom + FileSystems.getDefault().getSeparator() + fileName, channelSftpTo.put(pathTo + FileSystems.getDefault().getSeparator() + fileName), monitor);
             } catch (SftpException e) {

@@ -1,6 +1,6 @@
 package no.neic.tryggve.constants;
 
-public final class JsonName {
+public final class JsonPropertyName {
     public static final String USERNAME = "username";
     public static final String OTC = "otc";
     public static final String PASSWORD = "password";

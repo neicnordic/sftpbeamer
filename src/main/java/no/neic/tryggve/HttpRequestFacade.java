@@ -14,7 +14,7 @@ import io.vertx.core.shareddata.SharedData;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.Session;
 import no.neic.tryggve.constants.HostName;
-import no.neic.tryggve.constants.JsonName;
+import no.neic.tryggve.constants.JsonPropertyName;
 import no.neic.tryggve.constants.UrlParam;
 import no.neic.tryggve.constants.VertxConstant;
 
@@ -59,12 +59,12 @@ public final class HttpRequestFacade {
 
     public static void loginHandler(RoutingContext routingContext) {
         JsonObject requestJsonBody = routingContext.getBodyAsJson();
-        String userName = requestJsonBody.getString(JsonName.USERNAME);
-        String otc = requestJsonBody.getString(JsonName.OTC);
-        String password = requestJsonBody.getString(JsonName.PASSWORD);
-        String hostName = requestJsonBody.getString(JsonName.HOSTNAME);
-        String port = requestJsonBody.getString(JsonName.PORT);
-        String source = requestJsonBody.getString(JsonName.SOURCE);
+        String userName = requestJsonBody.getString(JsonPropertyName.USERNAME);
+        String otc = requestJsonBody.getString(JsonPropertyName.OTC);
+        String password = requestJsonBody.getString(JsonPropertyName.PASSWORD);
+        String hostName = requestJsonBody.getString(JsonPropertyName.HOSTNAME);
+        String port = requestJsonBody.getString(JsonPropertyName.PORT);
+        String source = requestJsonBody.getString(JsonPropertyName.SOURCE);
 
 
         try {
@@ -91,8 +91,8 @@ public final class HttpRequestFacade {
             Vector<ChannelSftp.LsEntry> entryVector = optional.get().ls(homePath);
             List<List<String>> entryList = Utils.assembleFolderContent(entryVector);
             JsonObject responseJson = new JsonObject();
-            responseJson.put(JsonName.DATA, new JsonArray(entryList));
-            responseJson.put(JsonName.HOME, homePath);
+            responseJson.put(JsonPropertyName.DATA, new JsonArray(entryList));
+            responseJson.put(JsonPropertyName.HOME, homePath);
             routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(responseJson.encode());
         } catch (JSchException | SftpException e) {
             logger.error(e);
@@ -121,13 +121,13 @@ public final class HttpRequestFacade {
             FolderNode root = new FolderNode();
             root.folderName = fromPath;
 
-            for (Object fileName : data.getJsonArray(JsonName.FILE)) {
+            for (Object fileName : data.getJsonArray(JsonPropertyName.FILE)) {
                 root.fileNodeList.add(fileName.toString());
             }
 
 
             FolderNode folderNode = null;
-            for (Object folderName : data.getJsonArray(JsonName.FOLDER)) {
+            for (Object folderName : data.getJsonArray(JsonPropertyName.FOLDER)) {
                 String path = fromPath + FileSystems.getDefault().getSeparator() + folderName;
                 folderNode = Utils.assembleFolderInfo(channelSftpFrom.get(), path, folderName.toString());
                 if (folderNode != null) {
@@ -135,7 +135,7 @@ public final class HttpRequestFacade {
                 }
             }
             root.transfer(channelSftpFrom.get(), fromPath, channelSftpTo.get(), toPath, new ProgressMonitor(bus, messageAddress), bus, messageAddress);
-            bus.publish(VertxConstant.TRANSFER_EVENTBUS_NAME, new JsonObject().put(JsonName.STATUS, "done").put(JsonName.ADDRESS, messageAddress).encode());
+            bus.publish(VertxConstant.TRANSFER_EVENTBUS_NAME, new JsonObject().put(JsonPropertyName.STATUS, "done").put(JsonPropertyName.ADDRESS, messageAddress).encode());
 
         }, false, result -> {});
 
@@ -157,8 +157,8 @@ public final class HttpRequestFacade {
             Vector<ChannelSftp.LsEntry> entryVector = optional.get().ls(path);
             List<List<String>> entryList = Utils.assembleFolderContent(entryVector);
             JsonObject responseJson = new JsonObject();
-            responseJson.put(JsonName.DATA, new JsonArray(entryList));
-            responseJson.put(JsonName.PATH, path);
+            responseJson.put(JsonPropertyName.DATA, new JsonArray(entryList));
+            responseJson.put(JsonPropertyName.PATH, path);
             routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(responseJson.encode());
         } catch (SftpException e) {
             logger.error(e);

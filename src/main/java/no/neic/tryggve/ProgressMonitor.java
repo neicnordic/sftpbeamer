@@ -3,7 +3,7 @@ package no.neic.tryggve;
 import com.jcraft.jsch.SftpProgressMonitor;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
-import no.neic.tryggve.constants.JsonName;
+import no.neic.tryggve.constants.JsonPropertyName;
 import no.neic.tryggve.constants.VertxConstant;
 
 public final class ProgressMonitor implements SftpProgressMonitor {
@@ -28,10 +28,10 @@ public final class ProgressMonitor implements SftpProgressMonitor {
     public boolean count(long transferredData) {
         this.transferredSize += transferredData;
         JsonObject jsonObject = new JsonObject();
-        jsonObject.put(JsonName.STATUS, "transferring").put(JsonName.ADDRESS, address);
-        jsonObject.put(JsonName.TRANSFERRED_BYTES, transferredSize);
-        jsonObject.put(JsonName.TOTAL_BYTES, fileSize);
-        jsonObject.put(JsonName.FILE_NAME, this.fileName);
+        jsonObject.put(JsonPropertyName.STATUS, "transferring").put(JsonPropertyName.ADDRESS, address);
+        jsonObject.put(JsonPropertyName.TRANSFERRED_BYTES, transferredSize);
+        jsonObject.put(JsonPropertyName.TOTAL_BYTES, fileSize);
+        jsonObject.put(JsonPropertyName.FILE_NAME, this.fileName);
         bus.publish(VertxConstant.TRANSFER_EVENTBUS_NAME, jsonObject.encode());
 
         return true;
