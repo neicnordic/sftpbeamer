@@ -100,6 +100,25 @@ public final class HttpRequestFacade {
         }
     }
 
+    public static void createFolder(RoutingContext routingContext) {
+        JsonObject requestJsonBody = routingContext.getBodyAsJson();
+        String source = requestJsonBody.getString(JsonPropertyName.SOURCE);
+        String path = requestJsonBody.getString(JsonPropertyName.PATH);
+
+        Session session = routingContext.session();
+        String sessionId = session.id();
+
+        Optional<ChannelSftp> optional = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
+        logger.debug(path);
+        try {
+            optional.get().mkdir(path);
+        } catch (SftpException e) {
+            logger.debug(e);
+        }
+
+        routingContext.response().setStatusCode(HttpResponseStatus.CREATED.code()).end();
+    }
+
     public static void transferHandler(RoutingContext routingContext) {
         JsonObject requestJsonBody = routingContext.getBodyAsJson();
         String fromPath = requestJsonBody.getJsonObject("from").getString("path");

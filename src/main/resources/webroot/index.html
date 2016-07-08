@@ -110,6 +110,29 @@
     </div>
 </div>
 
+<div class="modal fade" role="dialog" id="create_folder_modal" tabindex="-1" aria-labelledby="create_folder_modal_label">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h5 class="modal-title" id="create_folder_modal_label">Please input folder name</h5>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="folder_name" class="sr-only">Folder Name</label>
+                    <input type="text" class="form-control" id="folder_name">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal" id="folder_create">Create</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="panel panel-default container-fluid">
     <div class="panel-body row">
         <h1 class="site-title">SFTP Beamer</h1>
@@ -142,11 +165,6 @@
                     <div id="host1-table-div"></div>
                 </div>
             </div>
-            <div class="panel-footer text-right">
-                <button type="button" class="btn btn-primary" disabled="disabled" id="host1-upload-btn">Upload</button>
-                <button type="button" class="btn btn-primary" disabled="disabled" id="host1-delete-btn">Delete</button>
-                <button type="button" class="btn btn-primary" disabled="disabled" id="host1-transfer-btn">Transfer</button>
-            </div>
         </div>
         <div class="panel panel-info col-md-6 host2">
             <div class="panel-heading">
@@ -175,14 +193,7 @@
                     <div id="host2-table-div"></div>
                 </div>
             </div>
-            <div class="panel-footer text-right">
-                <button type="button" class="btn btn-primary" disabled="disabled" id="host2-upload-btn">Upload</button>
-                <button type="button" class="btn btn-primary" disabled="disabled" id="host2-delete-btn">Delete</button>
-                <button type="button" class="btn btn-primary" disabled="disabled" id="host2-transfer-btn">Transfer</button>
-            </div>
         </div>
-    </div>
-    <div class="panel-footer" style="height: 41px">
     </div>
 </div>
 <div id="waiting-box">
@@ -190,5 +201,27 @@
     <p></p>
 </div>
 <div id="gray-screen"></div>
+<div class="host1-menu menu">
+    <ul>
+        <li><a href="#" id="host1-delete-btn" type="button"><i class="fa fa-trash-o" aria-hidden="true"></i>&nbsp; Delete Selections</a></li>
+        <hr/>
+        <li><a href="#" id="host1-create-btn" type="button"><i class="fa fa-folder-o" aria-hidden="true"></i>&nbsp; New Folder</a></li>
+        <hr/>
+        <li><a href="#" id="host1-transfer-btn" type="button"><i class="fa fa-arrow-right" aria-hidden="true"></i>&nbsp; Transfer Selections</a></li>
+        <hr/>
+        <li><a href="#" id="host1-upload-btn" type="button"><i class="fa fa-upload" aria-hidden="true"></i>&nbsp; Upload Files</a></li>
+    </ul>
+</div>
+<div class="host2-menu menu">
+    <ul>
+        <li><a href="#" id="host2-delete-btn" type="button"><i class="fa fa-trash-o" aria-hidden="true"></i>&nbsp; Delete Selections</a></li>
+        <hr/>
+        <li><a href="#" id="host2-create-btn" type="button"><i class="fa fa-folder-o" aria-hidden="true"></i>&nbsp; New Folder</a></li>
+        <hr/>
+        <li><a href="#" id="host2-transfer-btn" type="button"><i class="fa fa-arrow-right" aria-hidden="true"></i>&nbsp; Transfer Selections</a></li>
+        <hr/>
+        <li><a href="#" id="host2-upload-btn" type="button"><i class="fa fa-upload" aria-hidden="true"></i>&nbsp; Upload Files</a></li>
+    </ul>
+</div>
 </body>
 </html>

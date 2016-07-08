@@ -135,3 +135,43 @@ input.form-input {
 .form-control:focus {
     border-color: #6944D0;
 }
+
+.menu{
+    color: #fff;
+    position:absolute;
+    z-index: 999999;
+    display: none;
+    box-shadow: 0 0 10px #713C3C;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.menu ul{
+    width: 100%;
+    list-style: none;
+    padding: 0;
+    margin:0;
+}
+
+.menu ul li a{
+    text-decoration: none;
+    cursor: pointer;
+    color: black;
+}
+
+.menu ul li{
+    background-color: whitesmoke;
+    padding-left: 10px;
+    padding-right: 5px;
+    padding-top: 2px;
+}
+
+.menu ul hr{
+    border: 0;
+    border-top: 1px solid darkgrey;
+    margin: 0;
+}
+
+.menu ul li:hover{
+    background-color: darkgrey;
+}

@@ -7,6 +7,11 @@ $(document).ready(function () {
         return null;
     });
 
+    $("html").on("click", function(){
+        $(".host1-menu").hide();
+        $(".host2-menu").hide();
+    });
+
 
     $('#upload-submit').click(function (event) {
         if(uploaded_files_array.length > 0) {
@@ -90,6 +95,33 @@ $(document).ready(function () {
 
     $('#transfer_modal').on('hide.bs.modal', function () {
         refresh_target_host(transfer_target);
+    });
+    
+    $('#folder_create').click(function () {
+        var folder_name = $('#folder_name').val();
+        var path = create_folder_path + "/" + folder_name;
+        var request_data = {"source": create_folder_target, "path": path};
+        if (folder_name) {
+            $.ajax({
+                type: "POST",
+                url: "/sftp/create",
+                data: JSON.stringify(request_data),
+                contentType: 'application/json; charset=utf-8',
+                statusCode: {
+                    201: function () {
+                        var url = "/sftp/list?path=" + create_folder_path + "&source=" + create_folder_target;
+                        $.ajax({
+                            type: "GET",
+                            url: url,
+                            dataType: "json",
+                            success: function (updatedData) {
+                                reloadTableData(updatedData["data"], updatedData["path"], create_folder_target);
+                            }
+                        });
+                    }
+                }
+            });
+        }
     });
     
 });

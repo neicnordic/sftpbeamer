@@ -12,6 +12,8 @@ $(document).ready(function () {
         disconnect_sftp('host2');
     });
 
+    $("#host2-table-div").on('contextmenu', '#host2-table>tbody', {target: "host2"}, showContextMenu);
+
     $(document).on('click', '.host2-folder-link', {target: "host2"}, clickOnFolder);
 
     $(document).on('click', '.host2-path-link', {target: "host2"}, clickOnPath);

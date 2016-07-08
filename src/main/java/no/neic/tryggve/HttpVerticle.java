@@ -44,6 +44,8 @@ public final class HttpVerticle extends AbstractVerticle {
 
         router.delete("/sftp/disconnect").produces("application/json").handler(HttpRequestFacade::disconnectHandler);
 
+        router.post("/sftp/create").consumes("application/json").handler(HttpRequestFacade::createFolder);
+
         router.route().handler(StaticHandler.create());
         router.route("/static/*").handler(StaticHandler.create());
 

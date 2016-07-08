@@ -169,9 +169,6 @@ function disconnect_sftp(source) {
                 $("#" + source + "-table").empty();
                 $("#" + source + "-table-div").html("");
                 $("#" + source + "-path").html("");
-                $("#" + source + "-delete-btn").prop("disabled", true);
-                $("#" + source + "-transfer-btn").prop("disabled", true);
-                $("#" + source + "-upload-btn").prop("disabled", true);
                 $("#" + source + "-disconnect-btn").prop("disabled", true);
                 $("#" + source + "-submit-btn").prop("disabled", false);
                 $("#" + source + "-username").prop("disabled", false);
@@ -546,5 +543,65 @@ function clickOnFolder(event) {
                 reloadTableData(returnedData["data"], path, target);
             }
         }
+    });
+}
+
+function showContextMenu(event) {
+    var target = event.data['target'];
+    //prevent default context menu for right click
+    event.preventDefault();
+
+    var menu;
+    if (target == 'host1') {
+        menu = $(".host1-menu");
+    } else if (target == 'host2') {
+        menu = $(".host2-menu")
+    }
+
+    //hide menu if already shown
+    menu.hide();
+
+    //get x and y values of the click event
+    var pageX = event.pageX;
+    var pageY = event.pageY;
+
+    //position menu div near mouse cliked area
+    menu.css({top: pageY , left: pageX});
+
+    var mwidth = menu.width();
+    var mheight = menu.height();
+    var screenWidth = $(window).width();
+    var screenHeight = $(window).height();
+
+    //if window is scrolled
+    var scrTop = $(window).scrollTop();
+
+    //if the menu is close to right edge of the window
+    if(pageX+mwidth > screenWidth){
+        menu.css({left:pageX-mwidth});
+    }
+
+    //if the menu is close to bottom edge of the window
+    if(pageY+mheight > screenHeight+scrTop){
+        menu.css({top:pageY-mheight});
+    }
+
+    //finally show the menu
+    menu.show();
+}
+
+var create_folder_target;
+var create_folder_path;
+function showFolderModal(event) {
+    var target = event.data['target'];
+    create_folder_target = target;
+    if (target == "host1") {
+        create_folder_path = extractPath($('.host1-path-link:last').attr('href'));
+    } else if (target == "host2") {
+        create_folder_path = extractPath($('.host2-path-link:last').attr('href'));
+    }
+    $('#create_folder_modal').modal({
+        keyboard: false,
+        backdrop: 'static'
     });
 }
