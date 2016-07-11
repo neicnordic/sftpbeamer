@@ -274,8 +274,7 @@ function getUploadReference(eventData) {
             upload_url = host1_upload_url;
             $('#upload_progress_group').empty();
             $('#upload_modal').modal({
-                keyboard: false,
-                backdrop: 'static'
+                keyboard: false
             });
         }
     });
@@ -295,8 +294,7 @@ function deleteData(eventData) {
     if (selected_items.length == 0) {
         change_modal_property("Information", "No files or folders are selected.");
         $('#info_modal').modal({
-            keyboard: false,
-            backdrop: 'static'
+            keyboard: false
         });
     } else {
         selected_items.each(function (item) {
@@ -336,14 +334,12 @@ function deleteData(eventData) {
                             location.reload();
                         });
                         modal.modal({
-                            keyboard: false,
-                            backdrop: 'static'
+                            keyboard: false
                         });
                     } else if (returnedData["exception"]) {
                         change_modal_property("Exception", returnedData["exception"]);
                         $('#info_modal').modal({
-                            keyboard: false,
-                            backdrop: 'static'
+                            keyboard: false
                         });
                     }
                 }
@@ -368,8 +364,7 @@ function transferData(eventData) {
     if (selected_items.length == 0) {
         change_modal_property("Information", "No files or folders are selected.");
         $('#info_modal').modal({
-            keyboard: false,
-            backdrop: 'static'
+            keyboard: false
         });
     } else {
         selected_items.each(function (item) {
@@ -423,8 +418,7 @@ function transferData(eventData) {
                     success: function (returnedData) {
                         $('#transfer_progress_group').empty();
                         $('#transfer_modal').modal({
-                            keyboard: false,
-                            backdrop: 'static'
+                            keyboard: false
                         });
                         if (target == "host1") {
                             transfer_target = "host2";
@@ -444,8 +438,7 @@ function transferData(eventData) {
             if (message["status"] == "done") {
                 change_modal_property("Information", "File transfer is done.");
                 $('#info_modal').modal({
-                    keyboard: false,
-                    backdrop: 'static'
+                    keyboard: false
                 });
             }
         };
@@ -472,14 +465,12 @@ function clickOnPath(event) {
                     location.reload();
                 });
                 modal.modal({
-                    keyboard: false,
-                    backdrop: 'static'
+                    keyboard: false
                 });
             } else if (returnedData["exception"]) {
                 change_modal_property("Exception", returnedData["exception"]);
                 $('#info_modal').modal({
-                    keyboard: false,
-                    backdrop: 'static'
+                    keyboard: false
                 });
             } else {
                 var path = returnedData["path"];
@@ -521,14 +512,12 @@ function clickOnFolder(event) {
                     location.reload();
                 });
                 modal.modal({
-                    keyboard: false,
-                    backdrop: 'static'
+                    keyboard: false
                 });
             } else if (returnedData["exception"]) {
                 change_modal_property("Exception", returnedData["exception"]);
                 $('#info_modal').modal({
-                    keyboard: false,
-                    backdrop: 'static'
+                    keyboard: false
                 });
             } else {
                 var path = returnedData["path"];
@@ -601,7 +590,9 @@ function showFolderModal(event) {
         create_folder_path = extractPath($('.host2-path-link:last').attr('href'));
     }
     $('#create_folder_modal').modal({
-        keyboard: false,
-        backdrop: 'static'
+        keyboard: false
+    });
+    $('#create_folder_modal').on('shown.bs.modal', function () {
+        $('#folder_name').focus();
     });
 }

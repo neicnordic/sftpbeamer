@@ -44,12 +44,16 @@ $(document).ready(function() {
                 '<input type="password" class="form-control" id="password" placeholder="Password"></div>');
         }
         $('#credential_modal').modal({
-                keyboard: false,
-                backdrop: 'static'
-            });
+            keyboard: false,
+            backdrop: true
+        });
+        $('#credential_modal').on('shown.bs.modal', function () {
+            $('#password').focus();
+        });
     });
 
-    $('#credential_submit').click(function(){
+    $('#credential_submit').click(function(event){
+        event.preventDefault();
         var password;
         var otc = '';
         if (host_info.loginmodes[hostname] == 'otp') {
@@ -74,8 +78,7 @@ $(document).ready(function() {
                 disable_waiting_box();
                 change_modal_property("Exception", errorThrown);
                 $('#info_modal').modal({
-                    keyboard: false,
-                    backdrop: 'static'
+                    keyboard: false
                 });
             },
             success: function (returnedData) {
@@ -83,8 +86,7 @@ $(document).ready(function() {
                 if (returnedData['exception']) {
                     change_modal_property("Exception", returnedData["exception"]);
                     $('#info_modal').modal({
-                        keyboard: false,
-                        backdrop: 'static'
+                        keyboard: false
                     });
                 } else if (returnedData["error"]) {
                     change_modal_property("Error", returnedData["error"]);
@@ -93,8 +95,7 @@ $(document).ready(function() {
                         location.reload();
                     });
                     modal.modal({
-                        keyboard: false,
-                        backdrop: 'static'
+                        keyboard: false
                     });
                 } else {
                     $("#" + target + "-path").append('<a class="' + target + '-path-link" href="/sftp/list?path=' + returnedData["home"] + '&source=' + target + '">&laquo;root&raquo;/</a>');

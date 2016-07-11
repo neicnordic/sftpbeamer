@@ -76,8 +76,7 @@ $(document).ready(function () {
             } else {
                 change_modal_property("Information", "Uploading is done.");
                 $('#info_modal').modal({
-                    keyboard: false,
-                    backdrop: 'static'
+                    keyboard: false
                 });
             }
         }
@@ -97,7 +96,8 @@ $(document).ready(function () {
         refresh_target_host(transfer_target);
     });
     
-    $('#folder_create').click(function () {
+    $('#folder_create').click(function (event) {
+        event.preventDefault();
         var folder_name = $('#folder_name').val();
         var path = create_folder_path + "/" + folder_name;
         var request_data = {"source": create_folder_target, "path": path};

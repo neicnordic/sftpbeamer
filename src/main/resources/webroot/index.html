@@ -100,12 +100,13 @@
                 </button>
                 <h5 class="modal-title" id="credential_modal_label">Please input credential</h5>
             </div>
-            <div class="modal-body">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" data-dismiss="modal" id="credential_submit">Submit</button>
-            </div>
+            <form>
+                <div class="modal-body">
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary" data-dismiss="modal" id="credential_submit">Submit</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -119,16 +120,17 @@
                 </button>
                 <h5 class="modal-title" id="create_folder_modal_label">Please input folder name</h5>
             </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="folder_name" class="sr-only">Folder Name</label>
-                    <input type="text" class="form-control" id="folder_name">
+            <form>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="folder_name" class="sr-only">Folder Name</label>
+                        <input type="text" class="form-control" id="folder_name">
+                    </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" data-dismiss="modal" id="folder_create">Create</button>
-            </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary" data-dismiss="modal" id="folder_create">Create</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -146,7 +148,7 @@
                 <form class="form-inline login-form host1-form">
                     <div class="form-group">
                         <label class="sr-only" for="host1-username">User Name</label>
-                        <input type="text" class="form-control form-input" id="host1-username" placeholder="User Name">
+                        <input type="text" class="form-control form-input" id="host1-username" placeholder="User Name" autofocus>
                     </div>
                     <div class="form-group">
                         <label class="sr-only" for="host1-hostname">Hostname</label>
