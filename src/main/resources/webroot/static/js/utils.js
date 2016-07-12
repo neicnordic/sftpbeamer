@@ -169,8 +169,8 @@ function disconnect_sftp(source) {
                 $("#" + source + "-table").empty();
                 $("#" + source + "-table-div").html("");
                 $("#" + source + "-path").html("");
-                $("#" + source + "-disconnect-btn").prop("disabled", true);
-                $("#" + source + "-submit-btn").prop("disabled", false);
+                $("#" + source + "-disconnect-btn").css("display", "none");
+                $("#" + source + "-submit-btn").css("display", "inline-block");
                 $("#" + source + "-username").prop("disabled", false);
                 $("#" + source + "-hostname").prop("disabled", false);
                 $("#" + source + "-port").prop("disabled", false);

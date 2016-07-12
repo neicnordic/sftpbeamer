@@ -7,6 +7,9 @@ $(document).ready(function () {
         return null;
     });
 
+    $("#host2-disconnect-btn").css("display", "none");
+    $("#host1-disconnect-btn").css("display", "none");
+
     $("html").on("click", function(){
         $(".host1-menu").hide();
         $(".host2-menu").hide();

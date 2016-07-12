@@ -148,7 +148,7 @@
                 <form class="form-inline login-form host1-form">
                     <div class="form-group">
                         <label class="sr-only" for="host1-username">User Name</label>
-                        <input type="text" class="form-control form-input" id="host1-username" placeholder="User Name" autofocus>
+                        <input type="text" class="form-control form-input" id="host1-username" placeholder="User Name" autofocus maxlength="20" size="10">
                     </div>
                     <div class="form-group">
                         <label class="sr-only" for="host1-hostname">Hostname</label>
@@ -156,11 +156,15 @@
                     </div>
                     <div class="form-group">
                         <label class="sr-only" for="host1-port">Port</label>
-                        <input type="text" class="form-control form-input" id="host1-port" placeholder="Port" value="22">
+                        <input type="text" class="form-control form-input" id="host1-port" placeholder="Port" value="22" maxlength="6" size="4">
                     </div>
-                    <br>
-                    <input type="button" id="host1-submit-btn" class="btn btn-primary btn-connect" data-target="host1" value="Connect">
-                    <input type="button" id="host1-disconnect-btn" class="btn btn-primary btn-disconnect" disabled="disabled" value="Disconnect">
+
+                    <button type="button" id="host1-submit-btn" class="btn btn-primary btn-connect"
+                            data-target="host1"><i class="fa fa-sign-in" aria-hidden="true"></i>&nbsp; Connect
+                    </button>
+                    <button type="button" id="host1-disconnect-btn" class="btn btn-primary btn-disconnect"><i class="fa fa-sign-out" aria-hidden="true"></i>&nbsp; Disconnect
+                    </button>
+
                 </form>
                 <div class="panel panel-default">
                     <div class="panel-heading" id="host1-path"></div>
@@ -176,7 +180,7 @@
                 <form class="form-inline login-form host2-form">
                     <div class="form-group">
                         <label class="sr-only" for="host2-username">User Name</label>
-                        <input type="text" class="form-control form-input" id="host2-username" placeholder="User Name">
+                        <input type="text" class="form-control form-input" id="host2-username" placeholder="User Name" maxlength="20" size="10">
                     </div>
                     <div class="form-group">
                         <label class="sr-only" for="host2-hostname">Hostname</label>
@@ -184,11 +188,10 @@
                     </div>
                     <div class="form-group">
                         <label class="sr-only" for="host2-port">Port</label>
-                        <input type="text" class="form-control form-input" id="host2-port" placeholder="Port" value="22">
+                        <input type="text" class="form-control form-input" id="host2-port" placeholder="Port" value="22" maxlength="6" size="4">
                     </div>
-                    <br>
-                    <input type="button" id="host2-submit-btn" class="btn btn-primary btn-connect" data-target="host2" value="Connect">
-                    <input type="button" id="host2-disconnect-btn" class="btn btn-primary btn-disconnect" disabled="disabled" value="Disconnect">
+                    <button type="button" id="host2-submit-btn" class="btn btn-primary btn-connect" data-target="host2"><i class="fa fa-sign-in" aria-hidden="true"></i>&nbsp; Connect</button>
+                    <button type="button" id="host2-disconnect-btn" class="btn btn-primary btn-disconnect"><i class="fa fa-sign-out" aria-hidden="true"></i>&nbsp; Disconnect</button>
                 </form>
                 <div class="panel panel-default">
                     <div class="panel-heading" id="host2-path"></div>
@@ -220,7 +223,7 @@
         <hr/>
         <li><a href="#" id="host2-create-btn" type="button"><i class="fa fa-folder-o" aria-hidden="true"></i>&nbsp; New Folder</a></li>
         <hr/>
-        <li><a href="#" id="host2-transfer-btn" type="button"><i class="fa fa-arrow-right" aria-hidden="true"></i>&nbsp; Transfer Selections</a></li>
+        <li><a href="#" id="host2-transfer-btn" type="button"><i class="fa fa-arrow-left" aria-hidden="true"></i>&nbsp; Transfer Selections</a></li>
         <hr/>
         <li><a href="#" id="host2-upload-btn" type="button"><i class="fa fa-upload" aria-hidden="true"></i>&nbsp; Upload Files</a></li>
     </ul>

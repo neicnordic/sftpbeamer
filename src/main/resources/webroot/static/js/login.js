@@ -98,11 +98,11 @@ $(document).ready(function() {
                         keyboard: false
                     });
                 } else {
-                    $("#" + target + "-path").append('<a class="' + target + '-path-link" href="/sftp/list?path=' + returnedData["home"] + '&source=' + target + '">&laquo;root&raquo;/</a>');
+                    $("#" + target + "-path").append('<a class="' + target + '-path-link" href="/sftp/list?path=' + returnedData["home"] + '&source=' + target + '">&laquo;Home&raquo;/</a>');
                     $("#" + target + "-table-div").html('<table id="' + target + '-table" class="table table-striped"></table>');
                     createTable(target, returnedData["home"], returnedData["data"]);
-                    $("#" + target + "-disconnect-btn").prop("disabled", false);
-                    $("#" + target + "-submit-btn").prop("disabled", true);
+                    $("#" + target + "-disconnect-btn").css("display", "inline-block");
+                    $("#" + target + "-submit-btn").css("display", "none");
                     $("#" + target + "-username").prop("disabled", true);
                     $("#" + target + "-hostname").prop("disabled", true);
                     $("#" + target + "-port").prop("disabled", true);
