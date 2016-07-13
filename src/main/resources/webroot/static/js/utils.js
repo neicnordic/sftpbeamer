@@ -40,7 +40,10 @@ function createTable(name, home, content) {
                     }
                 }
             }, {
-                "title": "Size"
+                "title": "Size",
+                "render": function (data, type, full, meta) {
+                    return convertBytes(data);
+                }
             }, {
                 "visible": false
             }]
@@ -70,7 +73,10 @@ function createTable(name, home, content) {
                     }
                 }
             }, {
-                "title": "Size"
+                "title": "Size",
+                "render": function (data, type, full, meta) {
+                    return convertBytes(data);
+                }
             }, {
                 "visible": false
             }]
@@ -218,7 +224,10 @@ function reloadTableData(updatedData, path, source) {
                 }
             }
         }, {
-            "title": "Size"
+            "title": "Size",
+            "render": function (data, type, full, meta) {
+                return convertBytes(data);
+            }
         }, {
             "visible": false
         }]
@@ -595,4 +604,13 @@ function showFolderModal(event) {
     $('#create_folder_modal').on('shown.bs.modal', function () {
         $('#folder_name').focus();
     });
+}
+
+function convertBytes(size) {
+    if (size == "0") {
+        return size;
+    } else {
+        var i = Math.floor( Math.log(size) / Math.log(1024) );
+        return ( size / Math.pow(1024, i) ).toFixed(2) * 1 + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
+    }
 }

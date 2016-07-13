@@ -1,19 +1,19 @@
 package no.neic.tryggve;
 
-import com.jcraft.jsch.*;
-import com.sun.org.apache.bcel.internal.generic.LSTORE;
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.SftpException;
+import com.jcraft.jsch.SftpProgressMonitor;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
 public final class Utils {
+    private static Logger logger = LoggerFactory.getLogger(Utils.class);
 
     public static void transferFile(ChannelSftp from, ChannelSftp to, String pathFrom, String pathTo, String fileName, EventBus bus, String messageAddress) {
         SftpProgressMonitor monitor = new ProgressMonitor(bus, messageAddress);
@@ -101,19 +101,43 @@ public final class Utils {
         channelSftp.rmdir(folderPath);
     }
 
-    public static List<List<String>> assembleFolderContent(Vector<ChannelSftp.LsEntry> entryVector) {
+    public static List<List<String>> assembleFolderContent(Vector<ChannelSftp.LsEntry> entryVector, ChannelSftp channelSftp, String rootPath) {
         List<List<String>> entryList = new ArrayList<>(entryVector.size());
         entryVector.stream().filter(entry -> !entry.getFilename().startsWith(".")).forEach(entry -> {
             List<String> item = new ArrayList<>(3);
             item.add(entry.getFilename());
-            item.add(String.valueOf(entry.getAttrs().getSize()));
+
             if (entry.getAttrs().isDir()) {
+                try {
+                    item.add(String.valueOf(getSizeOfFolder(channelSftp, rootPath + FileSystems.getDefault().getSeparator() + entry.getFilename())));
+                } catch (SftpException e) {
+                    //TODO
+                    logger.error(e);
+                    item.add(String.valueOf(entry.getAttrs().getSize()));
+                }
                 item.add("folder");
             } else {
+                item.add(String.valueOf(entry.getAttrs().getSize()));
                 item.add("file");
             }
             entryList.add(item);
         });
         return entryList;
+    }
+
+    public static long getSizeOfFolder(ChannelSftp channelSftp, String folder) throws SftpException{
+        logger.debug("Get size of folder : " + folder);
+        long size = 0;
+        Vector<ChannelSftp.LsEntry> entries = channelSftp.ls(folder);
+        for (ChannelSftp.LsEntry entry : entries) {
+            if (!entry.getFilename().startsWith(".")) {
+                if (entry.getAttrs().isDir()) {
+                    size += getSizeOfFolder(channelSftp, folder + FileSystems.getDefault().getSeparator() + entry.getFilename());
+                } else {
+                    size += entry.getAttrs().getSize();
+                }
+            }
+        }
+        return size;
     }
 }

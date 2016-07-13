@@ -89,7 +89,7 @@ public final class HttpRequestFacade {
             }
 
             Vector<ChannelSftp.LsEntry> entryVector = optional.get().ls(homePath);
-            List<List<String>> entryList = Utils.assembleFolderContent(entryVector);
+            List<List<String>> entryList = Utils.assembleFolderContent(entryVector, optional.get(), homePath);
             JsonObject responseJson = new JsonObject();
             responseJson.put(JsonPropertyName.DATA, new JsonArray(entryList));
             responseJson.put(JsonPropertyName.HOME, homePath);
@@ -174,7 +174,7 @@ public final class HttpRequestFacade {
             Optional<ChannelSftp> optional = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
 
             Vector<ChannelSftp.LsEntry> entryVector = optional.get().ls(path);
-            List<List<String>> entryList = Utils.assembleFolderContent(entryVector);
+            List<List<String>> entryList = Utils.assembleFolderContent(entryVector, optional.get(), path);
             JsonObject responseJson = new JsonObject();
             responseJson.put(JsonPropertyName.DATA, new JsonArray(entryList));
             responseJson.put(JsonPropertyName.PATH, path);
