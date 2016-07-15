@@ -8,6 +8,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import no.neic.tryggve.constants.JsonPropertyName;
 import no.neic.tryggve.constants.VertxConstant;
+import org.apache.commons.lang3.StringUtils;
 
 import java.nio.file.FileSystems;
 import java.util.ArrayList;
@@ -23,6 +24,29 @@ public class FolderNode {
     public FolderNode() {
         this.fileNodeList = new ArrayList<>();
         this.folderNodeList = new ArrayList<>();
+    }
+
+    public List<String> getRelativeFilePathArray(String relativePath) {
+        List<String> filesList = new ArrayList<>();
+        if (fileNodeList.size() == 0 && folderNodeList.size() == 0) {
+            return filesList;
+        }
+
+        if (fileNodeList.size() != 0) {
+            if (relativePath.isEmpty()) {
+                fileNodeList.stream().forEach(filesList::add);
+            } else {
+                fileNodeList.stream().forEach(fileName -> filesList.add(StringUtils.join(new String[]{relativePath, fileName}, FileSystems.getDefault().getSeparator())));
+            }
+        }
+        if (folderNodeList.size() != 0) {
+            if (relativePath.isEmpty()) {
+                folderNodeList.stream().forEach(folderNode -> filesList.addAll(folderNode.getRelativeFilePathArray(folderNode.folderName)));
+            } else {
+                folderNodeList.stream().forEach(folderNode -> filesList.addAll(folderNode.getRelativeFilePathArray(StringUtils.join(new String[]{relativePath, folderNode.folderName}, FileSystems.getDefault().getSeparator()))));
+            }
+        }
+        return filesList;
     }
 
     /**
@@ -77,6 +101,21 @@ public class FolderNode {
         for (FolderNode folderNode : folderNodeList) {
             folderNode.transfer(channelSftpFrom, pathFrom + FileSystems.getDefault().getSeparator() + folderNode.folderName,
                     channelSftpTo, pathTo + FileSystems.getDefault().getSeparator() + folderNode.folderName, monitor, bus, messageAddress);
+        }
+    }
+
+    public void createFolder(boolean isRootNode, ChannelSftp channelSftpTo, String pathTo) {
+        if (isRootNode) {
+            for (FolderNode folderNode : folderNodeList) {
+                folderNode.createFolder(false, channelSftpTo, pathTo);
+            }
+        } else {
+            try {
+                channelSftpTo.mkdir(StringUtils.join(new String[]{pathTo, this.folderName}, FileSystems.getDefault().getSeparator()));
+                for (FolderNode folderNode : folderNodeList) {
+                    folderNode.createFolder(false, channelSftpTo, StringUtils.join(new String[]{pathTo, this.folderName}, FileSystems.getDefault().getSeparator()));
+                }
+            } catch (SftpException e) {}
         }
     }
 }

@@ -3,6 +3,7 @@ package no.neic.tryggve;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
+import com.jcraft.jsch.SftpProgressMonitor;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonArray;
@@ -119,48 +120,72 @@ public final class HttpRequestFacade {
         routingContext.response().setStatusCode(HttpResponseStatus.CREATED.code()).end();
     }
 
-    public static void transferHandler(RoutingContext routingContext) {
+    public static void transferStartHandler(RoutingContext routingContext) {
         JsonObject requestJsonBody = routingContext.getBodyAsJson();
-        String fromPath = requestJsonBody.getJsonObject("from").getString("path");
         String toPath = requestJsonBody.getJsonObject("to").getString("path");
-        JsonObject data = requestJsonBody.getJsonObject("from").getJsonObject("data");
+        String fromPath = requestJsonBody.getJsonObject("from").getString("path");
+        JsonArray filesArray = requestJsonBody.getJsonArray("data");
+
         String messageAddress = requestJsonBody.getString("address");
 
         Session session = routingContext.session();
         String sessionId = session.id();
 
-
         routingContext.vertx().executeBlocking(future -> {
-            EventBus bus = routingContext.vertx().eventBus();
-
-
             Optional<ChannelSftp> channelSftpFrom = SftpConnectionManager.getManager().getSftpConnection(sessionId, requestJsonBody.getJsonObject("from").getString("name"));
             Optional<ChannelSftp> channelSftpTo = SftpConnectionManager.getManager().getSftpConnection(sessionId, requestJsonBody.getJsonObject("to").getString("name"));
 
-            FolderNode root = new FolderNode();
-            root.folderName = fromPath;
-
-            for (Object fileName : data.getJsonArray(JsonPropertyName.FILE)) {
-                root.fileNodeList.add(fileName.toString());
-            }
-
-
-            FolderNode folderNode = null;
-            for (Object folderName : data.getJsonArray(JsonPropertyName.FOLDER)) {
-                String path = fromPath + FileSystems.getDefault().getSeparator() + folderName;
-                folderNode = Utils.assembleFolderInfo(channelSftpFrom.get(), path, folderName.toString());
-                if (folderNode != null) {
-                    root.folderNodeList.add(folderNode);
+            EventBus bus = routingContext.vertx().eventBus();
+            SftpProgressMonitor monitor = new ProgressMonitor(bus, messageAddress);
+            JsonObject jsonObject = new JsonObject();
+            for (Object object : filesArray) {
+                try {
+                    jsonObject.put(JsonPropertyName.STATUS, "start").put("address", messageAddress);
+                    jsonObject.put(JsonPropertyName.FILE, fromPath + FileSystems.getDefault().getSeparator() + object.toString());
+                    bus.publish(VertxConstant.TRANSFER_EVENTBUS_NAME, jsonObject.encode());
+                    channelSftpFrom.get().get(fromPath + FileSystems.getDefault().getSeparator() + object.toString(), channelSftpTo.get().put(toPath + FileSystems.getDefault().getSeparator() + object.toString()), monitor);
+                } catch (SftpException e) {
                 }
+                jsonObject.clear();
             }
-            root.transfer(channelSftpFrom.get(), fromPath, channelSftpTo.get(), toPath, new ProgressMonitor(bus, messageAddress), bus, messageAddress);
             bus.publish(VertxConstant.TRANSFER_EVENTBUS_NAME, new JsonObject().put(JsonPropertyName.STATUS, "done").put(JsonPropertyName.ADDRESS, messageAddress).encode());
-
         }, false, result -> {});
 
-        JsonObject jsonObject = new JsonObject();
-        jsonObject.put("result", "ok");
-        routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(jsonObject.encode());
+        routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
+    }
+
+    public static void transferPrepareHandler(RoutingContext routingContext) {
+        JsonObject requestJsonBody = routingContext.getBodyAsJson();
+        String fromPath = requestJsonBody.getJsonObject("from").getString("path");
+        String toPath = requestJsonBody.getJsonObject("to").getString("path");
+        JsonObject data = requestJsonBody.getJsonObject("from").getJsonObject("data");
+//        String messageAddress = requestJsonBody.getString("address");
+
+        Session session = routingContext.session();
+        String sessionId = session.id();
+
+        Optional<ChannelSftp> channelSftpFrom = SftpConnectionManager.getManager().getSftpConnection(sessionId, requestJsonBody.getJsonObject("from").getString("name"));
+        Optional<ChannelSftp> channelSftpTo = SftpConnectionManager.getManager().getSftpConnection(sessionId, requestJsonBody.getJsonObject("to").getString("name"));
+
+        FolderNode root = new FolderNode();
+        root.folderName = fromPath;
+
+        for (Object fileName : data.getJsonArray(JsonPropertyName.FILE)) {
+            root.fileNodeList.add(fileName.toString());
+        }
+
+        FolderNode folderNode;
+        for (Object folderName : data.getJsonArray(JsonPropertyName.FOLDER)) {
+            String path = fromPath + FileSystems.getDefault().getSeparator() + folderName;
+            folderNode = Utils.assembleFolderInfo(channelSftpFrom.get(), path, folderName.toString());
+            if (folderNode != null) {
+                root.folderNodeList.add(folderNode);
+            }
+        }
+
+        root.createFolder(true, channelSftpTo.get(), toPath);
+
+        routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(new JsonArray(root.getRelativeFilePathArray("")).encode());
     }
 
     public static void listHandler(RoutingContext routingContext) {

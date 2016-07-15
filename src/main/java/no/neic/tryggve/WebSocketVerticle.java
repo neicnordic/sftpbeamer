@@ -7,6 +7,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import no.neic.tryggve.constants.ConfigName;
 import no.neic.tryggve.constants.JsonPropertyName;
+import no.neic.tryggve.constants.VertxConstant;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,7 +20,7 @@ public final class WebSocketVerticle extends AbstractVerticle {
     @Override
     public void start() throws Exception {
         webSocketHolder = new HashMap<>();
-        vertx.eventBus().<String>consumer("transfer", message -> {
+        vertx.eventBus().<String>consumer(VertxConstant.TRANSFER_EVENTBUS_NAME, message -> {
 
             JsonObject jsonObject = new JsonObject(message.body());
             String webSocketAddress = jsonObject.getString(JsonPropertyName.ADDRESS);

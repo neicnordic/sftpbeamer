@@ -395,63 +395,103 @@ function transferData(eventData) {
             to_path = extractPath($('.host1-path-link:last').attr('href'));
         }
 
-        var messageAddress = generateId(40);
-        var ws = create_ws_connection();
+
+        // var transferredData;
+        // if (target == "host1") {
+        //     transferredData = JSON.stringify({
+        //         "address": messageAddress,
+        //         "from": {"path": from_path, "name": "host1", "data": {"file": fileData, "folder": folderData}},
+        //         "to": {"path": to_path, "name": "host2"}
+        //     });
+        // } else if (target == "host2") {
+        //     transferredData = JSON.stringify({
+        //         "address": messageAddress,
+        //         "from": {"path": from_path, "name": "host2", "data": {"file": fileData, "folder": folderData}},
+        //         "to": {"path": to_path, "name": "host1"}
+        //     })
+        // }
+
         var transferredData;
         if (target == "host1") {
             transferredData = JSON.stringify({
-                "address": messageAddress,
                 "from": {"path": from_path, "name": "host1", "data": {"file": fileData, "folder": folderData}},
                 "to": {"path": to_path, "name": "host2"}
             });
         } else if (target == "host2") {
             transferredData = JSON.stringify({
-                "address": messageAddress,
                 "from": {"path": from_path, "name": "host2", "data": {"file": fileData, "folder": folderData}},
                 "to": {"path": to_path, "name": "host1"}
             })
         }
-        ws.onopen = function () {
-            ws.send(JSON.stringify({
-                "address": messageAddress}));
-        };
-        ws.onmessage = function (event) {
-            var message = JSON.parse(event.data);
-            if (message["status"] == "connected") {
-                $.ajax({
-                    type: "POST",
-                    url: "/sftp/transfer",
-                    data: transferredData,
-                    dataType: "json",
-                    contentType: 'application/json; charset=utf-8',
-                    success: function (returnedData) {
-                        $('#transfer_progress_group').empty();
-                        $('#transfer_modal').modal({
-                            keyboard: false
-                        });
-                        if (target == "host1") {
-                            transfer_target = "host2";
-                        } else if (target == "host2") {
-                            transfer_target = "host1";
-                        }
 
-                    }
-                });
-            }
-            if (message["status"] == "start") {
-                $('#transfer_progress_group').append('<div class="progress" style="margin-bottom: 10px;"> <div class="progress-bar progress-bar-info progress-bar-striped" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span style="color: black;font-size: medium;">' + message["file"] +'</span> </div></div>');
-            }
-            if (message["status"] == "transferring") {
-                refresh_progress_bar(message);
-            }
-            if (message["status"] == "done") {
-                change_modal_property("Information", "File transfer is done.");
-                $('#info_modal').modal({
+        $.ajax({
+            type: "POST",
+            url: "/sftp/transfer/prepare",
+            data: transferredData,
+            dataType: "json",
+            contentType: 'application/json; charset=utf-8',
+            success: function (returnedData) {
+                $('#transfer_progress_group').empty();
+                $('#transfer_modal').modal({
                     keyboard: false
                 });
+
+                var messageAddress = generateId(40);
+                if (target == "host1") {
+                    transfer_target = "host2";
+
+                    transferredData = JSON.stringify({
+                        "address": messageAddress,
+                        "from": {"path": from_path, "name": "host1"},
+                        "to": {"path": to_path, "name": "host2"},
+                        "data": returnedData
+                    });
+                } else if (target == "host2") {
+                    transfer_target = "host1";
+
+                    transferredData = JSON.stringify({
+                        "address": messageAddress,
+                        "from": {"path": from_path, "name": "host2"},
+                        "to": {"path": to_path, "name": "host1"},
+                        "data": returnedData
+                    })
+                }
+
+
+                var ws = create_ws_connection();
+                ws.onopen = function () {
+                    ws.send(JSON.stringify({
+                        "address": messageAddress}));
+                };
+                ws.onmessage = function (event) {
+                    var message = JSON.parse(event.data);
+                    if (message["status"] == "connected") {
+                        $.ajax({
+                            type: "POST",
+                            url: "/sftp/transfer/start",
+                            data: transferredData,
+                            dataType: "json",
+                            contentType: 'application/json; charset=utf-8',
+                            success: function (returnedData) {
+                            }
+                        });
+                    }
+                    if (message["status"] == "start") {
+                        $('#transfer_progress_group').append('<div class="progress" style="margin-bottom: 10px;"> <div class="progress-bar progress-bar-info progress-bar-striped" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span style="color: black;font-size: medium;">' + message["file"] +'</span> </div></div>');
+                    }
+                    if (message["status"] == "transferring") {
+                        refresh_progress_bar(message);
+                    }
+                    if (message["status"] == "done") {
+                        change_modal_property("Information", "File transfer is done.");
+                        $('#info_modal').modal({
+                            keyboard: false
+                        });
+                    }
+                };
+                ws.onclose = function () {};
             }
-        };
-        ws.onclose = function () {};
+        });
 
     }
 }
