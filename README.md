@@ -19,7 +19,7 @@ are very welcome!
 ##Introduction <a name="introduction"></a>
 The SFTP Beamer is initially motivated by the [Tryggve](https://wiki.neic.no/wiki/Tryggve) project. One of missions Tryggve project has is to help users easily use the existing services at the different Nordic countries. In Norway and Sweden, both of them have their own secure service for sensitive data. The built-in approach of importing/exporting data to/from the service is primitive and needs much manual labour, especially when manipulating data between the two services. In order to simplify this kind of task and make it user friendly, the SFTP Beamer comes out.
 
-SFTP Beamer is built on Java 8, Vert.x 3.2.1, JQuery, Bootstrap, and a bunch of other libraries. The following image shows how SFTP Beamer links a user with the two SFTP/SSH servers.
+SFTP Beamer is built on Java 8, Vert.x 3.3.2, JQuery, Bootstrap, and a bunch of other libraries. The following image shows how SFTP Beamer links a user with the two SFTP/SSH servers.
 
 ![How SFTP Beamer links a user with the two SFTP/SSH servers](http://i.imgur.com/EXBqhpZ.png)
 
@@ -59,7 +59,7 @@ mvn clean package
 Run application:
 ```
 cd target
-java -jar -Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.Log4jLogDelegateFactory sftpbeamer.jar
+java -jar -Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.Log4j2LogDelegateFactory sftpbeamer.jar
 ```
 Navigate to the SFTP Beamer dashboard:
 - http://localhost:8080
@@ -129,7 +129,7 @@ Edit app.info.json:
 ```
 Directly run the sftpbeamer.jar in the background:
 ```
-nohup java -jar -Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.Log4jLogDelegateFactory sftpbeamer.jar &
+nohup java -jar -Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.Log4j2LogDelegateFactory sftpbeamer.jar &
 ```
 Access the SFTP Beamer:
 ```

@@ -6,6 +6,7 @@ import com.jcraft.jsch.SftpProgressMonitor;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import org.apache.commons.lang3.StringUtils;
 
 import java.nio.file.FileSystems;
 import java.util.ArrayList;
@@ -88,16 +89,18 @@ public final class Utils {
     }
 
     public static void deleteFolder(String folderPath, ChannelSftp channelSftp) throws SftpException{
+        logger.debug("List folder " + folderPath);
         Vector<ChannelSftp.LsEntry> entries = channelSftp.ls(folderPath);
         for (ChannelSftp.LsEntry entry : entries) {
             if (!entry.getFilename().startsWith(".")) {
                 if (entry.getAttrs().isDir()) {
-                    deleteFolder(folderPath + FileSystems.getDefault().getSeparator() + entry.getFilename(), channelSftp);
+                    deleteFolder(StringUtils.join(folderPath, FileSystems.getDefault().getSeparator(), entry.getFilename()), channelSftp);
                 } else {
-                    channelSftp.rm(folderPath + FileSystems.getDefault().getSeparator() + entry.getFilename());
+                    channelSftp.rm(StringUtils.join(folderPath, FileSystems.getDefault().getSeparator(), entry.getFilename()));
                 }
             }
         }
+        logger.debug("Remove folder " + folderPath);
         channelSftp.rmdir(folderPath);
     }
 

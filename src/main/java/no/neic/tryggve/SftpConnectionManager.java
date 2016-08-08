@@ -4,6 +4,7 @@ package no.neic.tryggve;
 
 
 import com.jcraft.jsch.*;
+import io.vertx.core.cli.InvalidValueException;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
@@ -11,6 +12,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 public final class SftpConnectionManager {
@@ -40,7 +42,7 @@ public final class SftpConnectionManager {
         JSch.setConfig("StrictHostKeyChecking", "no");
         session.setUserInfo(new TwoStepsAuth(password, otc));
         session.connect();
-        saveSftpConnection(sessionId, source, openSftpChannel(session));
+        saveSftpConnection(sessionId, source, session);
     }
 
     public void createSftpConnection(String sessionId, String source,
@@ -50,7 +52,7 @@ public final class SftpConnectionManager {
         JSch.setConfig("StrictHostKeyChecking", "no");
         session.setUserInfo(new OneStepAuth(password));
         session.connect();
-        saveSftpConnection(sessionId, source, openSftpChannel(session));
+        saveSftpConnection(sessionId, source, session);
     }
 
     private ChannelSftp openSftpChannel(Session session) throws JSchException{
@@ -62,13 +64,13 @@ public final class SftpConnectionManager {
         return channelSftp;
     }
 
-    public Optional<ChannelSftp> getSftpConnection(String sessionId, String source) {
+    public ChannelSftp getSftpConnection(String sessionId, String source) throws JSchException{
         if (source.equals(HOST1)) {
-            return Optional.of(this.sftpConnectionHolderMap.get(sessionId).getHost1());
+            return openSftpChannel(this.sftpConnectionHolderMap.get(sessionId).getHost1());
         } else if (source.equals(HOST2)) {
-            return Optional.of(this.sftpConnectionHolderMap.get(sessionId).getHost2());
+            return openSftpChannel(this.sftpConnectionHolderMap.get(sessionId).getHost2());
         } else {
-            return Optional.empty();
+            return null;
         }
     }
 
@@ -99,21 +101,21 @@ public final class SftpConnectionManager {
 
     }
 
-    private void saveSftpConnection(String sessionId, String source, ChannelSftp channelSftp) {
+    private void saveSftpConnection(String sessionId, String source, Session session) {
         if (sftpConnectionHolderMap.containsKey(sessionId)) {
             if (source.equals(HOST1)) {
-                sftpConnectionHolderMap.get(sessionId).setHost1(channelSftp);
+                sftpConnectionHolderMap.get(sessionId).setHost1(session);
             }
             if (source.equals(HOST2)) {
-                sftpConnectionHolderMap.get(sessionId).setHost2(channelSftp);
+                sftpConnectionHolderMap.get(sessionId).setHost2(session);
             }
         } else {
             SftpConnectionHolder holder = new SftpConnectionHolder();
             if (source.equals(HOST1)) {
-                holder.setHost1(channelSftp);
+                holder.setHost1(session);
             }
             if (source.equals(HOST2)) {
-                holder.setHost2(channelSftp);
+                holder.setHost2(session);
             }
             sftpConnectionHolderMap.put(sessionId, holder);
         }
@@ -122,22 +124,22 @@ public final class SftpConnectionManager {
 
 
     private class SftpConnectionHolder {
-        private ChannelSftp host1;
-        private ChannelSftp host2;
+        private Session host1;
+        private Session host2;
 
-        public ChannelSftp getHost1() {
+        public Session getHost1() {
             return host1;
         }
 
-        public void setHost1(ChannelSftp host1) {
+        public void setHost1(Session host1) {
             this.host1 = host1;
         }
 
-        public ChannelSftp getHost2() {
+        public Session getHost2() {
             return host2;
         }
 
-        public void setHost2(ChannelSftp host2) {
+        public void setHost2(Session host2) {
             this.host2 = host2;
         }
     }

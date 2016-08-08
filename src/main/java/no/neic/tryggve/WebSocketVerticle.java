@@ -26,7 +26,7 @@ public final class WebSocketVerticle extends AbstractVerticle {
             String webSocketAddress = jsonObject.getString(JsonPropertyName.ADDRESS);
             if (webSocketHolder.containsKey(webSocketAddress)) {
                 webSocketHolder.get(webSocketAddress).writeFinalTextFrame(message.body());
-                if (jsonObject.getString(JsonPropertyName.STATUS).equals("done")) {
+                if (jsonObject.getString(JsonPropertyName.STATUS).equals("finish")) {
                     webSocketHolder.remove(webSocketAddress).close();
                 }
             }

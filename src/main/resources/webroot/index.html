@@ -30,7 +30,7 @@
     <script type="text/javascript" src="static/js/commons.js"></script>
 </head>
 <body>
-<div class="modal fade" role="dialog" id="transfer_modal" tabindex="-1" aria-labelledby="transfer_modal_label">
+<div data-spy="scroll" data-target="#transfer_progress_group" class="modal fade" role="dialog" id="transfer_modal" tabindex="-1" aria-labelledby="transfer_modal_label">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -40,7 +40,16 @@
                 <h3 class="modal-title">File transfer</h3>
             </div>
             <div class="modal-body">
+                <div id="transfer_progress">
+                    <p id="transferred-file-name"></p>
+                    <div class="progress" style="margin-bottom: 10px;">
+                        <div class="progress-bar progress-bar-info progress-bar-striped" role="progressbar"
+                             aria-valuemin="0" aria-valuemax="100" style="min-width: 2em;">
+                        </div>
+                    </div>
+                </div>
                 <div id="transfer_progress_group">
+                    <p>&nbsp; <i class="fa fa-check" aria-hidden="true"></i></p>
                 </div>
             </div>
         </div>

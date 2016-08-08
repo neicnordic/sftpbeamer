@@ -18,10 +18,10 @@
     </Appenders>
     <Loggers>
         <Logger name="no.neic.tryggve" level="debug" additivity="false">
-            <appender-ref ref="beamer-log"/>
+            <AppenderRef ref="beamer-log"/>
         </Logger>
         <Root level="debug">
-            <appender-ref ref="beamer-log"/>
+            <AppenderRef ref="beamer-log"/>
         </Root>
     </Loggers>
 </Configuration>

@@ -114,24 +114,24 @@ function create_ws_connection() {
 }
 
 function refresh_progress_bar(message) {
-    var transfer_progress_bar = $('#transfer_progress_group .progress:last-child .progress-bar');
+    var transfer_progress_bar = $('.progress-bar');
     var transferred_bytes = Number(message["transferred_bytes"]);
     var total_bytes = Number(message["total_bytes"]);
     var file_name = message["file_name"];
     if (transferred_bytes == total_bytes) {
         transfer_progress_bar.css("width", '100%');
-        transfer_progress_bar.find("span").text("100% " + file_name);
+        transfer_progress_bar.text("100%");
     } else {
         var percentage = Math.round(transferred_bytes / total_bytes * 100);
         transfer_progress_bar.css("width", percentage + '%');
-        transfer_progress_bar.find("span").text(percentage + '% ' + file_name);
+        transfer_progress_bar.text(percentage + '%');
     }
 }
 
 function change_modal_property(modal_title, modal_content) {
     $('#info_modal_label').text(modal_title);
 
-    $('.modal-body p').text(modal_content);
+    $('#info_modal .modal-body p').text(modal_content);
 }
 
 function fetch_table(source) {
@@ -395,22 +395,6 @@ function transferData(eventData) {
             to_path = extractPath($('.host1-path-link:last').attr('href'));
         }
 
-
-        // var transferredData;
-        // if (target == "host1") {
-        //     transferredData = JSON.stringify({
-        //         "address": messageAddress,
-        //         "from": {"path": from_path, "name": "host1", "data": {"file": fileData, "folder": folderData}},
-        //         "to": {"path": to_path, "name": "host2"}
-        //     });
-        // } else if (target == "host2") {
-        //     transferredData = JSON.stringify({
-        //         "address": messageAddress,
-        //         "from": {"path": from_path, "name": "host2", "data": {"file": fileData, "folder": folderData}},
-        //         "to": {"path": to_path, "name": "host1"}
-        //     })
-        // }
-
         var transferredData;
         if (target == "host1") {
             transferredData = JSON.stringify({
@@ -431,6 +415,7 @@ function transferData(eventData) {
             dataType: "json",
             contentType: 'application/json; charset=utf-8',
             success: function (returnedData) {
+                $('#transfer_progress').css("display", "block");
                 $('#transfer_progress_group').empty();
                 $('#transfer_modal').modal({
                     keyboard: false
@@ -477,16 +462,29 @@ function transferData(eventData) {
                         });
                     }
                     if (message["status"] == "start") {
-                        $('#transfer_progress_group').append('<div class="progress" style="margin-bottom: 10px;"> <div class="progress-bar progress-bar-info progress-bar-striped" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span style="color: black;font-size: medium;">' + message["file"] +'</span> </div></div>');
+                        $('.progress-bar').text("0%");
+                        $('#transferred-file-name').text(message["file"])
                     }
                     if (message["status"] == "transferring") {
                         refresh_progress_bar(message);
                     }
                     if (message["status"] == "done") {
-                        change_modal_property("Information", "File transfer is done.");
-                        $('#info_modal').modal({
-                            keyboard: false
+                        var progress_bar = $('.progress-bar');
+                        progress_bar.css("width", '0');
+                        progress_bar.text("0%");
+                        $("#transfer_progress_group").append('<p>' + message["file"] + '&nbsp; <i class="fa fa-check" aria-hidden="true" style="color: green;"></i></p>');
+                        $('[data-spy="scroll"]').each(function () {
+                            $(this).scrollspy('refresh')
                         });
+                    }
+                    if (message["status"] == "finish") {
+                        $('#transfer_progress').css("display", "none");
+                    }
+                    if (message["status"] == "error") {
+                        // change_modal_property("Information", "File transfer is done.");
+                        // $('#info_modal').modal({
+                        //     keyboard: false
+                        // });
                     }
                 };
                 ws.onclose = function () {};

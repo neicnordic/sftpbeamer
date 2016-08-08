@@ -6,6 +6,8 @@ import io.vertx.core.json.JsonObject;
 import no.neic.tryggve.constants.JsonPropertyName;
 import no.neic.tryggve.constants.VertxConstant;
 
+import java.nio.file.FileSystems;
+
 public final class ProgressMonitor implements SftpProgressMonitor {
     private EventBus bus;
     private String address;
@@ -40,5 +42,9 @@ public final class ProgressMonitor implements SftpProgressMonitor {
     @Override
     public void end() {
         transferredSize = 0;
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.put(JsonPropertyName.STATUS, "done").put("address", address);
+        jsonObject.put(JsonPropertyName.FILE, fileName);
+        bus.publish(VertxConstant.TRANSFER_EVENTBUS_NAME, jsonObject.encode());
     }
 }
