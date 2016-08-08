@@ -76,11 +76,6 @@ $(document).ready(function () {
         always: function (e, data) {
             if(uploaded_files_array.length > 0) {
                 uploaded_files_array.pop().submit();
-            } else {
-                change_modal_property("Information", "Uploading is done.");
-                $('#info_modal').modal({
-                    keyboard: false
-                });
             }
         }
     });

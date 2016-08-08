@@ -291,12 +291,13 @@ function getUploadReference(eventData) {
 
 function deleteData(eventData) {
     var target = eventData.data['target'];
-    var transferredData = [];
 
-    var selected_items
+    var selected_items;
     if (target == "host1") {
+        $(".host1-menu").hide();
         selected_items = host1_table.api().rows('.selected').data();
     } else if (target == "host2") {
+        $(".host2-menu").hide();
         selected_items = host2_table.api().rows('.selected').data();
     }
 
@@ -306,55 +307,69 @@ function deleteData(eventData) {
             keyboard: false
         });
     } else {
-        selected_items.each(function (item) {
-            transferredData.push({"name": item[0], "type": item[2]});
-        });
+        $('#confirm_modal h4').text("Are you sure to delete selected items?");
+        $('#confirm_modal').modal({keyboard: false});
 
-        var path;
-        if (target == "host1") {
-            path = extractPath($('.host1-path-link:last').attr('href'));
-        } else if (target == "host2") {
-            path = extractPath($('.host2-path-link:last').attr('href'));
-        }
+        $('#confirm_modal_button').one('click', {"target": target, "selected_items": selected_items}, confirmDelete);
+    }
+}
+
+function confirmDelete(eventData) {
+
+    var target = eventData.data['target'];
+    var transferredData = [];
+
+    var selected_items = eventData.data['selected_items'];
 
 
-        $.ajax({
-            type: "DELETE",
-            url: "/sftp/delete",
-            data: JSON.stringify({"source": target, "path": path, "data": transferredData}),
-            contentType: 'application/json; charset=utf-8',
-            statusCode: {
-                200: function () {
-                    var url = "/sftp/list?path=" + path + "&source=" + target;
-                    $.ajax({
-                        type: "GET",
-                        url: url,
-                        dataType: "json",
-                        success: function (updatedData) {
-                            reloadTableData(updatedData["data"], updatedData["path"], target);
-                        }
-                    });
-                },
-                500: function (returnedData) {
-                    if (returnedData["error"]) {
-                        change_modal_property("Error", returnedData["error"]);
-                        var modal = $('#info_modal');
-                        modal.one('hide.bs.modal', function (event) {
-                            location.reload();
-                        });
-                        modal.modal({
-                            keyboard: false
-                        });
-                    } else if (returnedData["exception"]) {
-                        change_modal_property("Exception", returnedData["exception"]);
-                        $('#info_modal').modal({
-                            keyboard: false
-                        });
+    selected_items.each(function (item) {
+        transferredData.push({"name": item[0], "type": item[2]});
+    });
+
+    var path;
+    if (target == "host1") {
+        path = extractPath($('.host1-path-link:last').attr('href'));
+    } else if (target == "host2") {
+        path = extractPath($('.host2-path-link:last').attr('href'));
+    }
+
+
+    $.ajax({
+        type: "DELETE",
+        url: "/sftp/delete",
+        data: JSON.stringify({"source": target, "path": path, "data": transferredData}),
+        contentType: 'application/json; charset=utf-8',
+        statusCode: {
+            200: function () {
+                var url = "/sftp/list?path=" + path + "&source=" + target;
+                $.ajax({
+                    type: "GET",
+                    url: url,
+                    dataType: "json",
+                    success: function (updatedData) {
+                        reloadTableData(updatedData["data"], updatedData["path"], target);
                     }
+                });
+            },
+            500: function (returnedData) {
+                if (returnedData["error"]) {
+                    change_modal_property("Error", returnedData["error"]);
+                    var modal = $('#info_modal');
+                    modal.one('hide.bs.modal', function (event) {
+                        location.reload();
+                    });
+                    modal.modal({
+                        keyboard: false
+                    });
+                } else if (returnedData["exception"]) {
+                    change_modal_property("Exception", returnedData["exception"]);
+                    $('#info_modal').modal({
+                        keyboard: false
+                    });
                 }
             }
-        });
-    }
+        }
+    });
 }
 
 function transferData(eventData) {

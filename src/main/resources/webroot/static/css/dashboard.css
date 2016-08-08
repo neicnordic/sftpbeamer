@@ -177,3 +177,9 @@ input.form-input {
     margin-top: 30px;
     overflow: -moz-scrollbars-vertical;
 }
+
+#upload_progress_group{
+    overflow-y: scroll;
+    height: 200px;
+    overflow: -moz-scrollbars-vertical;
+}
