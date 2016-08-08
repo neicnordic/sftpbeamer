@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.FileSystems;
 import java.util.Arrays;
-import java.util.Optional;
 
 public final class UploadVerticle extends AbstractVerticle{
     private static final Logger logger = LoggerFactory.getLogger(UploadVerticle.class);
@@ -53,32 +52,42 @@ public final class UploadVerticle extends AbstractVerticle{
 
                 String source = jsonObject.getString("source");
 
-                ChannelSftp channelSftp = null;
                 try {
-                    channelSftp = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
+                    ChannelSftp channelSftp = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
 
-                    OutputStream ops = channelSftp.put(path + FileSystems.getDefault().getSeparator() + fileName);
-
-                    httpServerRequest.handler(buffer -> {
-                        try {
-                            ops.write(buffer.getBytes());
-                        } catch (IOException e) {
-                            logger.error(e);
+                    try {
+                        OutputStream ops = channelSftp.put(path + FileSystems.getDefault().getSeparator() + fileName);
+                        httpServerRequest.handler(buffer -> {
+                            try {
+                                ops.write(buffer.getBytes());
+                            } catch (IOException e) {
+                                logger.error(e);
+                                try {
+                                    ops.close();
+                                } catch (IOException e1) {
+                                }
+                                if (channelSftp.isConnected()) {
+                                    channelSftp.disconnect();
+                                }
+                            }
+                        }).endHandler(aVoid -> {
+                            try {
+                                ops.close();
+                            } catch (IOException e) {
+                            }
+                            if (channelSftp.isConnected()) {
+                                channelSftp.disconnect();
+                            }
+                            httpServerRequest.response().end();
+                        });
+                    } catch (SftpException e) {
+                        if (channelSftp.isConnected()) {
+                            channelSftp.disconnect();
                         }
-                    }).endHandler(aVoid -> {
-                        try {
-                            ops.close();
-                        } catch (IOException e) {}
-                        httpServerRequest.response().end();
-                    });
-                } catch (SftpException e) {
-                    logger.error(e);
+                    }
+
                 } catch (JSchException e) {
                     logger.error(e);
-                } finally {
-                    if (channelSftp != null && channelSftp.isConnected()) {
-                        channelSftp.disconnect();
-                    }
                 }
 
             } else {
