@@ -85,7 +85,15 @@ $(document).ready(function () {
             url: "/sftp/upload/reference",
             method: "DELETE",
             contentType: "text/plain",
-            data: host_upload_reference
+            data: host_upload_reference,
+            statusCode: {
+                204: function () {
+                    //TODO
+                }
+            },
+            error: function () {
+                //TODO
+            }
         });
         refresh_target_host(upload_target);
     });
@@ -117,9 +125,12 @@ $(document).ready(function () {
                             }
                         });
                     }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    showErrorAlertInTop(create_folder_target, jqXHR.responseText, errorThrown, 'Folder creation failed.');
                 }
             });
         }
     });
-    
+
 });

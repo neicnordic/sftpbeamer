@@ -87,8 +87,9 @@ function createTable(name, home, content) {
 function enable_waiting_box(message) {
     $('#gray-screen').css({'display': 'block', opacity: 0.3, 'width': $(document).width(), 'height': $(document).height()});
     $('body').css({'overflow': 'hidden'});
-    $('#waiting-box').css({'display': 'block'});
-    $('#waiting-box > p').text(message);
+    var waiting_box = $('#waiting-box');
+    waiting_box.css({'display': 'block'});
+    waiting_box.find('p').text(message);
 }
 
 function disable_waiting_box() {
@@ -153,7 +154,7 @@ function set_table(source, table) {
 }
 
 // str generateId(int len);
-//   len - must be an even number (default: 40)
+// len - must be an even number (default: 40)
 function generateId(len) {
     var arr = new Uint8Array((len || 40) / 2);
     window.crypto.getRandomValues(arr);
@@ -170,16 +171,21 @@ function disconnect_sftp(source) {
         $.ajax({
             type: "DELETE",
             url: "/sftp/disconnect?source=" + source,
-            success: function () {
-                fetch_table(source).api().destroy();
-                $("#" + source + "-table").empty();
-                $("#" + source + "-table-div").html("");
-                $("#" + source + "-path").html("");
-                $("#" + source + "-disconnect-btn").css("display", "none");
-                $("#" + source + "-submit-btn").css("display", "inline-block");
-                $("#" + source + "-username").prop("disabled", false);
-                $("#" + source + "-hostname").prop("disabled", false);
-                $("#" + source + "-port").prop("disabled", false);
+            statusCode: {
+                200: function () {
+                    fetch_table(source).api().destroy();
+                    $("#" + source + "-table").empty();
+                    $("#" + source + "-table-div").html("");
+                    $("#" + source + "-path").html("");
+                    $("#" + source + "-disconnect-btn").css("display", "none");
+                    $("#" + source + "-submit-btn").css("display", "inline-block");
+                    $("#" + source + "-username").prop("disabled", false);
+                    $("#" + source + "-hostname").prop("disabled", false);
+                    $("#" + source + "-port").prop("disabled", false);
+                }
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                showErrorAlertInTop(source, jqXHR.responseText, errorThrown, 'Disconnection failed.');
             }
         });
     }
@@ -247,9 +253,14 @@ function refresh_target_host(target) {
         type: "GET",
         url: href,
         dataType: "json",
-        success: function (returnedData) {
-            var path = returnedData["path"];
-            reloadTableData(returnedData["data"], path, target);
+        statusCode: {
+            200: function (returnedData) {
+                var path = returnedData["path"];
+                reloadTableData(returnedData["data"], path, target);
+            }
+        },
+        error: function (returnedData) {
+            //TODO
         }
     });
 }
@@ -275,16 +286,26 @@ function getUploadReference(eventData) {
         url: "/sftp/upload/reference?source=" + target,
         method: "GET",
         contents: "text/plain",
-        success: function(reference){
-            host_upload_reference = reference;
-            uploaded_files_array = [];
-            progress_bar_group = {};
-            upload_target = target;
-            upload_url = host1_upload_url;
-            $('#upload_progress_group').empty();
-            $('#upload_modal').modal({
-                keyboard: false
-            });
+        statusCode: {
+            200: function (reference) {
+                host_upload_reference = reference;
+                uploaded_files_array = [];
+                progress_bar_group = {};
+                upload_target = target;
+                if (upload_target == 'host1') {
+                    upload_url = host1_upload_url;
+                }
+                if (upload_target == 'host2') {
+                    upload_url = host2_upload_url;
+                }
+                $('#upload_progress_group').empty();
+                $('#upload_modal').modal({
+                    keyboard: false
+                });
+            }
+        },
+        error: function (jqXhR, textStatus, errorThrown) {
+            showErrorAlertInTop(target, jqXhR.responseText, errorThrown, "Can't upload data.");
         }
     });
 }
@@ -302,10 +323,7 @@ function deleteData(eventData) {
     }
 
     if (selected_items.length == 0) {
-        change_modal_property("Information", "No files or folders are selected.");
-        $('#info_modal').modal({
-            keyboard: false
-        });
+        showWarningAlertInTop(target, "No files or folders are selected.");
     } else {
         $('#confirm_modal h4').text("Are you sure to delete selected items?");
         $('#confirm_modal').modal({keyboard: false});
@@ -340,34 +358,22 @@ function confirmDelete(eventData) {
         data: JSON.stringify({"source": target, "path": path, "data": transferredData}),
         contentType: 'application/json; charset=utf-8',
         statusCode: {
-            200: function () {
+            204: function () {
                 var url = "/sftp/list?path=" + path + "&source=" + target;
                 $.ajax({
                     type: "GET",
                     url: url,
                     dataType: "json",
-                    success: function (updatedData) {
-                        reloadTableData(updatedData["data"], updatedData["path"], target);
+                    statusCode: {
+                        200: function (updatedData) {
+                            reloadTableData(updatedData["data"], updatedData["path"], target);
+                        }
                     }
                 });
-            },
-            500: function (returnedData) {
-                if (returnedData["error"]) {
-                    change_modal_property("Error", returnedData["error"]);
-                    var modal = $('#info_modal');
-                    modal.one('hide.bs.modal', function (event) {
-                        location.reload();
-                    });
-                    modal.modal({
-                        keyboard: false
-                    });
-                } else if (returnedData["exception"]) {
-                    change_modal_property("Exception", returnedData["exception"]);
-                    $('#info_modal').modal({
-                        keyboard: false
-                    });
-                }
             }
+        },
+        error: function (jqXhR, textStatus, errorThrown) {
+            showErrorAlertInTop(target, jqXhR.responseText, errorThrown, "Deletion failed.");
         }
     });
 }
@@ -386,10 +392,7 @@ function transferData(eventData) {
     }
 
     if (selected_items.length == 0) {
-        change_modal_property("Information", "No files or folders are selected.");
-        $('#info_modal').modal({
-            keyboard: false
-        });
+        showWarningAlertInTop(target, "No files or folders are selected.");
     } else {
         selected_items.each(function (item) {
             if (item[2] == 'file') {
@@ -429,80 +432,96 @@ function transferData(eventData) {
             data: transferredData,
             dataType: "json",
             contentType: 'application/json; charset=utf-8',
-            success: function (returnedData) {
-                $('#transfer_progress').css("display", "block");
-                $('#transfer_progress_group').empty();
-                $('#transfer_modal').modal({
-                    keyboard: false
-                });
-
-                var messageAddress = generateId(40);
-                if (target == "host1") {
-                    transfer_target = "host2";
-
-                    transferredData = JSON.stringify({
-                        "address": messageAddress,
-                        "from": {"path": from_path, "name": "host1"},
-                        "to": {"path": to_path, "name": "host2"},
-                        "data": returnedData
+            statusCode: {
+                200: function (returnedData) {
+                    $('#transfer_progress').css("display", "block");
+                    $('#transfer_progress_group').empty();
+                    $('#transfer_modal').modal({
+                        keyboard: false
                     });
-                } else if (target == "host2") {
-                    transfer_target = "host1";
 
-                    transferredData = JSON.stringify({
-                        "address": messageAddress,
-                        "from": {"path": from_path, "name": "host2"},
-                        "to": {"path": to_path, "name": "host1"},
-                        "data": returnedData
-                    })
+                    var messageAddress = generateId(40);
+                    if (target == "host1") {
+                        transfer_target = "host2";
+
+                        transferredData = JSON.stringify({
+                            "address": messageAddress,
+                            "from": {"path": from_path, "name": "host1"},
+                            "to": {"path": to_path, "name": "host2"},
+                            "data": returnedData
+                        });
+                    } else if (target == "host2") {
+                        transfer_target = "host1";
+
+                        transferredData = JSON.stringify({
+                            "address": messageAddress,
+                            "from": {"path": from_path, "name": "host2"},
+                            "to": {"path": to_path, "name": "host1"},
+                            "data": returnedData
+                        })
+                    }
+
+
+                    var ws = create_ws_connection();
+                    ws.onopen = function () {
+                        ws.send(JSON.stringify({
+                            "address": messageAddress}));
+                    };
+                    ws.onmessage = function (event) {
+                        var message = JSON.parse(event.data);
+                        if (message["status"] == "connected") {
+                            $.ajax({
+                                type: "POST",
+                                url: "/sftp/transfer/start",
+                                data: transferredData,
+                                dataType: "json",
+                                contentType: 'application/json; charset=utf-8',
+                                statusCode: {
+                                    200: function () {}
+                                },
+                                error: function (jqXhR, textStatus, errorThrown) {
+                                    //TODO
+                                }
+                            });
+                        }
+                        if (message["status"] == "start") {
+                            $('.progress-bar').text("0%");
+                            $('#transferred-file-name').text(message["file"])
+                        }
+                        if (message["status"] == "transferring") {
+                            refresh_progress_bar(message);
+                        }
+                        if (message["status"] == "done") {
+                            var progress_bar = $('.progress-bar');
+                            progress_bar.css("width", '0');
+                            progress_bar.text("0%");
+                            $("#transfer_progress_group").append('<p>' + message["file"] + '&nbsp; <i class="fa fa-check" aria-hidden="true" style="color: green;"></i></p>');
+                            $('[data-spy="scroll"]').each(function () {
+                                $(this).scrollspy('refresh')
+                            });
+                        }
+                        if (message["status"] == "failed") {
+                            var progress_bar = $('.progress-bar');
+                            progress_bar.css("width", '0');
+                            progress_bar.text("0%");
+                            $("#transfer_progress_group").append('<p>' + message["file"] + '&nbsp; <i class="fa fa-times" aria-hidden="true" style="color: red;"></i></p>');
+                            $('[data-spy="scroll"]').each(function () {
+                                $(this).scrollspy('refresh')
+                            });
+                        }
+                        if (message["status"] == "finish") {
+                            $('#transfer_progress').css("display", "none");
+                        }
+                        if (message["status"] == "error") {
+                            $('#transfer_modal').modal('hide');
+                            showErrorAlertInTop(target, message["message"], "", "Can't transfer data.");
+                        }
+                    };
+                    ws.onclose = function () {};
                 }
-
-
-                var ws = create_ws_connection();
-                ws.onopen = function () {
-                    ws.send(JSON.stringify({
-                        "address": messageAddress}));
-                };
-                ws.onmessage = function (event) {
-                    var message = JSON.parse(event.data);
-                    if (message["status"] == "connected") {
-                        $.ajax({
-                            type: "POST",
-                            url: "/sftp/transfer/start",
-                            data: transferredData,
-                            dataType: "json",
-                            contentType: 'application/json; charset=utf-8',
-                            success: function (returnedData) {
-                            }
-                        });
-                    }
-                    if (message["status"] == "start") {
-                        $('.progress-bar').text("0%");
-                        $('#transferred-file-name').text(message["file"])
-                    }
-                    if (message["status"] == "transferring") {
-                        refresh_progress_bar(message);
-                    }
-                    if (message["status"] == "done") {
-                        var progress_bar = $('.progress-bar');
-                        progress_bar.css("width", '0');
-                        progress_bar.text("0%");
-                        $("#transfer_progress_group").append('<p>' + message["file"] + '&nbsp; <i class="fa fa-check" aria-hidden="true" style="color: green;"></i></p>');
-                        $('[data-spy="scroll"]').each(function () {
-                            $(this).scrollspy('refresh')
-                        });
-                    }
-                    if (message["status"] == "finish") {
-                        $('#transfer_progress').css("display", "none");
-                    }
-                    if (message["status"] == "error") {
-                        // change_modal_property("Information", "File transfer is done.");
-                        // $('#info_modal').modal({
-                        //     keyboard: false
-                        // });
-                    }
-                };
-                ws.onclose = function () {};
+            },
+            error: function (jqXhR, textStatus, errorThrown) {
+                showErrorAlertInTop(target, jqXhR.responseText, errorThrown, "Can't transfer data.");
             }
         });
 
@@ -519,22 +538,8 @@ function clickOnPath(event) {
         type: "GET",
         url: href,
         dataType: "json",
-        success: function(returnedData) {
-            if (returnedData["error"]) {
-                change_modal_property("Error", returnedData["error"]);
-                var modal = $('#info_modal');
-                modal.one('hide.bs.modal', function (event) {
-                    location.reload();
-                });
-                modal.modal({
-                    keyboard: false
-                });
-            } else if (returnedData["exception"]) {
-                change_modal_property("Exception", returnedData["exception"]);
-                $('#info_modal').modal({
-                    keyboard: false
-                });
-            } else {
+        statusCode: {
+            200: function (returnedData) {
                 var path = returnedData["path"];
                 if (target == "host1") {
                     $(".host1-path-link").each(function () {
@@ -552,6 +557,9 @@ function clickOnPath(event) {
                 host1_upload_url = createUploadUrl(target);
                 reloadTableData(returnedData["data"], path, target);
             }
+        },
+        error: function (jqXhR, textStatus, errorThrown) {
+            showErrorAlertInTop(target, jqXhR.responseText, errorThrown, "Can't list items.");
         }
     });
 }
@@ -566,22 +574,8 @@ function clickOnFolder(event) {
         type: "GET",
         url: href,
         dataType: "json",
-        success: function(returnedData) {
-            if (returnedData["error"]) {
-                change_modal_property("Error", returnedData["error"]);
-                var modal = $('#info_modal');
-                modal.one('hide.bs.modal', function (event) {
-                    location.reload();
-                });
-                modal.modal({
-                    keyboard: false
-                });
-            } else if (returnedData["exception"]) {
-                change_modal_property("Exception", returnedData["exception"]);
-                $('#info_modal').modal({
-                    keyboard: false
-                });
-            } else {
+        statusCode: {
+            200: function (returnedData) {
                 var path = returnedData["path"];
                 if (target == "host1") {
                     $("#host1-path").append('<a class="host1-path-link" href="/sftp/list?path=' + path + '&source=host1">' + folder_name + '/</a>');
@@ -593,6 +587,9 @@ function clickOnFolder(event) {
 
                 reloadTableData(returnedData["data"], path, target);
             }
+        },
+        error: function (jqXhR, textStatus, errorThrown) {
+            showErrorAlertInTop(target, jqXhR.responseText, errorThrown, "Can't click folder.");
         }
     });
 }
@@ -666,4 +663,32 @@ function convertBytes(size) {
         var i = Math.floor( Math.log(size) / Math.log(1024) );
         return ( size / Math.pow(1024, i) ).toFixed(2) * 1 + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
     }
+}
+
+function showWarningAlertInTop(target, text) {
+    var alert = $('#' + target + '-panel .alert');
+    if (alert.length) {
+        alert.remove();
+    }
+    $('.' + target + '-form').after(returnInsertedAlert(text));
+}
+
+function showErrorAlertInTop(target, text, errorThrown, extraMessage) {
+    var alert = $('#' + target + '-panel .alert');
+    if (alert.length) {
+        alert.remove();
+    }
+    if (text) {
+        var index = text.indexOf(':');
+        if (index > 0) {
+            $('.' + target + '-form').after(returnInsertedAlert(extraMessage + ' ' + text.substring(index + 1)));
+        } else {
+            $('.' + target + '-form').after(returnInsertedAlert(extraMessage + ' ' + text));
+        }
+    } else {
+        $('.' + target + '-form').after(returnInsertedAlert(extraMessage + ' ' + errorThrown));
+    }
+}
+function returnInsertedAlert(message) {
+    return '<div class="alert alert-danger alert-dismissible fade in error" role="alert"> <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>' + message + '</div>';
 }

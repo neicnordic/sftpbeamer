@@ -74,30 +74,10 @@ $(document).ready(function() {
             type: "POST",
             url: "/sftp/login",
             data: JSON.stringify(requestData),
-            error: function (jqXhR, textStatus, errorThrown) {
-                disable_waiting_box();
-                change_modal_property("Exception", errorThrown);
-                $('#info_modal').modal({
-                    keyboard: false
-                });
-            },
-            success: function (returnedData) {
-                disable_waiting_box();
-                if (returnedData['exception']) {
-                    change_modal_property("Exception", returnedData["exception"]);
-                    $('#info_modal').modal({
-                        keyboard: false
-                    });
-                } else if (returnedData["error"]) {
-                    change_modal_property("Error", returnedData["error"]);
-                    var modal = $('#info_modal');
-                    modal.one('hide.bs.modal', function (event) {
-                        location.reload();
-                    });
-                    modal.modal({
-                        keyboard: false
-                    });
-                } else {
+            statusCode: {
+                200: function (returnedData) {
+                    disable_waiting_box();
+
                     $("#" + target + "-path").append('<a class="' + target + '-path-link" href="/sftp/list?path=' + returnedData["home"] + '&source=' + target + '">&laquo;Home&raquo;/</a>');
                     $("#" + target + "-table-div").html('<table id="' + target + '-table" class="table table-striped"></table>');
                     createTable(target, returnedData["home"], returnedData["data"]);
@@ -113,6 +93,10 @@ $(document).ready(function() {
                         host2_upload_url = createUploadUrl(target);
                     }
                 }
+            },
+            error: function (jqXhR, textStatus, errorThrown) {
+                disable_waiting_box();
+                showErrorAlertInTop(target, jqXhR.responseText, errorThrown, 'Login failed.')
             },
             dataType: "json",
             contentType: 'application/json; charset=utf-8'

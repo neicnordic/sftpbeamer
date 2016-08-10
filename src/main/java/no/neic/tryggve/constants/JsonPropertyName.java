@@ -17,4 +17,5 @@ public final class JsonPropertyName {
     public static final String TRANSFERRED_BYTES = "transferred_bytes";
     public static final String TOTAL_BYTES = "total_bytes";
     public static final String FILE_NAME = "file_name";
+    public static final String MESSAGE = "message";
 }

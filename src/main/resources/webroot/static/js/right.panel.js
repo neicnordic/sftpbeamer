@@ -24,6 +24,6 @@ $(document).ready(function () {
 
     $('#host2-upload-btn').click({target: "host2"}, getUploadReference);
 
-    $('#host1-create-btn').click({target: "host2"}, showFolderModal);
+    $('#host2-create-btn').click({target: "host2"}, showFolderModal);
     
 });

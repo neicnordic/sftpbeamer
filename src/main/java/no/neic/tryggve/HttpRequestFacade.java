@@ -98,8 +98,8 @@ public final class HttpRequestFacade {
             responseJson.put(JsonPropertyName.HOME, homePath);
             routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(responseJson.encode());
         } catch (JSchException | SftpException e) {
-            logger.error(e);
-            routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
+            logger.error(e.getMessage());
+            routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end(e.getMessage());
         } finally {
             if (channelSftp != null && channelSftp.isConnected()) {
                 channelSftp.disconnect();
@@ -128,7 +128,7 @@ public final class HttpRequestFacade {
             routingContext.response().setStatusCode(HttpResponseStatus.CREATED.code()).end();
         } catch (JSchException e) {
             logger.error(e);
-            routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
+            routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end(e.getMessage());
         } finally {
             if (channelSftp != null && channelSftp.isConnected()) {
                 channelSftp.disconnect();
@@ -159,11 +159,15 @@ public final class HttpRequestFacade {
                 JsonObject jsonObject = new JsonObject();
                 for (Object object : filesArray) {
                     try {
-                        jsonObject.put(JsonPropertyName.STATUS, "start").put("address", messageAddress);
-                        jsonObject.put(JsonPropertyName.FILE, fromPath + FileSystems.getDefault().getSeparator() + object.toString());
+                        jsonObject.put(JsonPropertyName.STATUS, "start").put("address", messageAddress).put(JsonPropertyName.FILE, StringUtils.join(fromPath, FileSystems.getDefault().getSeparator(), object.toString()));
                         bus.publish(VertxConstant.TRANSFER_EVENTBUS_NAME, jsonObject.encode());
                         channelSftpFrom.get(StringUtils.join(new String[]{fromPath, object.toString()}, FileSystems.getDefault().getSeparator()), channelSftpTo.put(StringUtils.join(new String[]{toPath, object.toString()}, FileSystems.getDefault().getSeparator())), monitor);
                     } catch (SftpException e) {
+                        logger.error(e);
+                        jsonObject.clear();
+                        jsonObject.put(JsonPropertyName.STATUS, "failed").put("address", messageAddress)
+                                .put(JsonPropertyName.FILE, StringUtils.join(fromPath, FileSystems.getDefault().getSeparator(), object.toString()));
+                        bus.publish(VertxConstant.TRANSFER_EVENTBUS_NAME, jsonObject.encode());
                     }
                     jsonObject.clear();
                 }
@@ -171,7 +175,10 @@ public final class HttpRequestFacade {
 
             } catch (JSchException e) {
                 logger.error(e);
-                bus.publish(VertxConstant.TRANSFER_EVENTBUS_NAME, new JsonObject().put(JsonPropertyName.STATUS, "error").put(JsonPropertyName.ADDRESS, messageAddress).encode());
+                bus.publish(VertxConstant.TRANSFER_EVENTBUS_NAME,
+                        new JsonObject().put(JsonPropertyName.STATUS, "error")
+                                .put(JsonPropertyName.ADDRESS, messageAddress)
+                                .put(JsonPropertyName.MESSAGE, StringUtils.isNotEmpty(e.getMessage()) ? e.getMessage() : "Internal Error").encode());
             } finally {
                 if (channelSftpFrom != null && channelSftpFrom.isConnected()) {
                     channelSftpFrom.disconnect();
@@ -287,7 +294,7 @@ public final class HttpRequestFacade {
         LocalMap<String, JsonObject> localMap = sharedData.getLocalMap(VertxConstant.UPLOAD_LOCALMAP_NAME);
 
         localMap.remove(reference);
-        routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
+        routingContext.response().setStatusCode(HttpResponseStatus.NO_CONTENT.code()).end();
     }
 
     public static void deleteHandler(RoutingContext routingContext) {
@@ -313,7 +320,7 @@ public final class HttpRequestFacade {
                     Utils.deleteFolder(StringUtils.join(path, FileSystems.getDefault().getSeparator(), item.getString("name")), channelSftp);
                 }
             }
-            routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
+            routingContext.response().setStatusCode(HttpResponseStatus.NO_CONTENT.code()).end();
 
         } catch (SftpException e) {
             logger.error(e);

@@ -183,3 +183,11 @@ input.form-input {
     height: 200px;
     overflow: -moz-scrollbars-vertical;
 }
+
+.alert.error{
+    border: none;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+    font-size: medium;
+}
