@@ -25,5 +25,7 @@ $(document).ready(function () {
     $('#host2-upload-btn').click({target: "host2"}, getUploadReference);
 
     $('#host2-create-btn').click({target: "host2"}, showFolderModal);
+
+    $('#host2-rename-btn').click({target: "host2"}, showRenameModal);
     
 });

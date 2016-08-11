@@ -26,4 +26,6 @@ $(document).ready(function () {
 
     $('#host1-create-btn').click({target: "host1"}, showFolderModal);
 
+    $('#host1-rename-btn').click({target: "host1"}, showRenameModal);
+
 });

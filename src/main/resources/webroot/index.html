@@ -158,6 +158,30 @@
     </div>
 </div>
 
+<div class="modal fade" role="dialog" id="rename_modal" tabindex="-1" aria-labelledby="rename_modal_label">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h5 class="modal-title" id="rename_modal_label">Rename to</h5>
+            </div>
+            <form>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="folder_name" class="sr-only">New Name</label>
+                        <input type="text" class="form-control" id="new_name">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary" data-dismiss="modal" id="confirm_rename">Confirm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="panel panel-default container-fluid">
     <div class="panel-body row">
         <h1 class="site-title">SFTP Beamer</h1>
@@ -235,6 +259,8 @@
         <hr/>
         <li><a href="#" id="host1-create-btn" type="button"><i class="fa fa-folder-o" aria-hidden="true"></i>&nbsp; New Folder</a></li>
         <hr/>
+        <li><a href="#" id="host1-rename-btn" type="button"><i class="fa fa-files-o" aria-hidden="true"></i>&nbsp; Rename</a></li>
+        <hr/>
         <li><a href="#" id="host1-transfer-btn" type="button"><i class="fa fa-arrow-right" aria-hidden="true"></i>&nbsp; Transfer Selections</a></li>
         <hr/>
         <li><a href="#" id="host1-upload-btn" type="button"><i class="fa fa-upload" aria-hidden="true"></i>&nbsp; Upload Files</a></li>
@@ -245,6 +271,8 @@
         <li><a href="#" id="host2-delete-btn" type="button"><i class="fa fa-trash-o" aria-hidden="true"></i>&nbsp; Delete Selections</a></li>
         <hr/>
         <li><a href="#" id="host2-create-btn" type="button"><i class="fa fa-folder-o" aria-hidden="true"></i>&nbsp; New Folder</a></li>
+        <hr/>
+        <li><a href="#" id="host2-rename-btn" type="button"><i class="fa fa-files-o" aria-hidden="true"></i>&nbsp; Rename</a></li>
         <hr/>
         <li><a href="#" id="host2-transfer-btn" type="button"><i class="fa fa-arrow-left" aria-hidden="true"></i>&nbsp; Transfer Selections</a></li>
         <hr/>

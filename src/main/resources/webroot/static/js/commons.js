@@ -133,4 +133,34 @@ $(document).ready(function () {
         }
     });
 
+    $('#confirm_rename').click(function (event) {
+        event.preventDefault();
+        var new_name = $('#new_name').val();
+        var request_data = {"source": rename_target, "path": rename_path, "old_name": old_name, "new_name": new_name};
+        if (new_name) {
+            $.ajax({
+                type: "POST",
+                url: "/sftp/rename",
+                data: JSON.stringify(request_data),
+                contentType: 'application/json; charset=utf-8',
+                statusCode: {
+                    200: function () {
+                        var url = "/sftp/list?path=" + rename_path + "&source=" + rename_target;
+                        $.ajax({
+                            type: "GET",
+                            url: url,
+                            dataType: "json",
+                            success: function (updatedData) {
+                                reloadTableData(updatedData["data"], updatedData["path"], rename_target);
+                            }
+                        });
+                    }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    showErrorAlertInTop(rename_target, jqXHR.responseText, errorThrown, 'Renaming failed.');
+                }
+            });
+        }
+    });
+
 });

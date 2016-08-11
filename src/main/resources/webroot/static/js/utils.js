@@ -648,12 +648,56 @@ function showFolderModal(event) {
     } else if (target == "host2") {
         create_folder_path = extractPath($('.host2-path-link:last').attr('href'));
     }
-    $('#create_folder_modal').modal({
+    var create_folder_modal = $('#create_folder_modal');
+    create_folder_modal.modal({
         keyboard: false
     });
-    $('#create_folder_modal').on('shown.bs.modal', function () {
-        $('#folder_name').focus();
+    create_folder_modal.on('shown.bs.modal', function () {
+        var folder_name = $('#folder_name');
+        folder_name.val('');
+        folder_name.focus();
     });
+}
+
+var rename_target;
+var rename_path;
+var old_name;
+function showRenameModal(event) {
+    rename_target = event.data['target'];
+
+    var selected_items;
+    if (rename_target == "host1") {
+        rename_path = extractPath($('.host1-path-link:last').attr('href'));
+        selected_items = host1_table.api().rows('.selected').data();
+    } else if (rename_target == "host2") {
+        rename_path = extractPath($('.host2-path-link:last').attr('href'));
+        selected_items = host2_table.api().rows('.selected').data();
+    }
+
+    if (selected_items.length <= 0) {
+        showWarningAlertInTop(rename_target, "No file or folder is selected.");
+    } else if (selected_items.length >= 2) {
+        showWarningAlertInTop(rename_target, "You can't rename more than one at a time.");
+    } else {
+        selected_items.each(function (item) {
+            if (item[2] == 'file') {
+                old_name = item[0];
+            }
+            if (item[2] == 'folder') {
+                old_name = item[0];
+            }
+        });
+
+        var rename_modal = $('#rename_modal');
+        rename_modal.modal({
+            keyboard: false
+        });
+        rename_modal.on('shown.bs.modal', function () {
+            var new_name = $('#new_name');
+            new_name.val('');
+            new_name.focus();
+        });
+    }
 }
 
 function convertBytes(size) {

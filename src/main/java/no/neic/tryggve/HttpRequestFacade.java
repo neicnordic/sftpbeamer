@@ -23,7 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.*;
 import java.nio.file.FileSystems;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.Vector;
 
@@ -107,7 +106,7 @@ public final class HttpRequestFacade {
         }
     }
 
-    public static void createFolder(RoutingContext routingContext) {
+    public static void createFolderHandler(RoutingContext routingContext) {
         JsonObject requestJsonBody = routingContext.getBodyAsJson();
         String source = requestJsonBody.getString(JsonPropertyName.SOURCE);
         String path = requestJsonBody.getString(JsonPropertyName.PATH);
@@ -127,6 +126,31 @@ public final class HttpRequestFacade {
 
             routingContext.response().setStatusCode(HttpResponseStatus.CREATED.code()).end();
         } catch (JSchException e) {
+            logger.error(e);
+            routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end(e.getMessage());
+        } finally {
+            if (channelSftp != null && channelSftp.isConnected()) {
+                channelSftp.disconnect();
+            }
+        }
+    }
+
+    public static void renameHandler(RoutingContext routingContext) {
+        JsonObject requestJsonBody = routingContext.getBodyAsJson();
+        String source = requestJsonBody.getString(JsonPropertyName.SOURCE);
+        String path = requestJsonBody.getString(JsonPropertyName.PATH);
+        String old_name = requestJsonBody.getString(JsonPropertyName.OLD_NAME);
+        String new_name = requestJsonBody.getString(JsonPropertyName.NEW_NAME);
+
+        Session session = routingContext.session();
+        String sessionId = session.id();
+
+        ChannelSftp channelSftp = null;
+        try {
+            channelSftp = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
+            channelSftp.rename(StringUtils.join(path, FileSystems.getDefault().getSeparator(), old_name), StringUtils.join(path, FileSystems.getDefault().getSeparator(), new_name));
+            routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
+        } catch (SftpException | JSchException e) {
             logger.error(e);
             routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end(e.getMessage());
         } finally {

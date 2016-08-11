@@ -18,4 +18,6 @@ public final class JsonPropertyName {
     public static final String TOTAL_BYTES = "total_bytes";
     public static final String FILE_NAME = "file_name";
     public static final String MESSAGE = "message";
+    public static final String NEW_NAME = "new_name";
+    public static final String OLD_NAME = "old_name";
 }
