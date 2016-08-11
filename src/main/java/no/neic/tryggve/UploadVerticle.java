@@ -38,7 +38,7 @@ public final class UploadVerticle extends AbstractVerticle{
 
             if (httpServerRequest.method().equals(HttpMethod.PUT) && httpServerRequest.path().startsWith("/upload")) {
                 String fileName = httpServerRequest.getHeader("Content-Disposition").split("filename=")[1];
-                fileName = fileName.substring(1, fileName.length() - 1);
+                fileName = fileName.substring(1, fileName.length() - 1).replace("%20", " ");
 
                 String reference = httpServerRequest.getHeader("Reference");
 
