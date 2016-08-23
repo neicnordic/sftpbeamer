@@ -2,8 +2,6 @@ package no.neic.tryggve;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpServer;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CookieHandler;
@@ -11,10 +9,11 @@ import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.sstore.LocalSessionStore;
 import no.neic.tryggve.constants.ConfigName;
+import no.neic.tryggve.constants.UrlPath;
+
+import javax.ws.rs.core.MediaType;
 
 public final class HttpVerticle extends AbstractVerticle {
-
-    private static final Logger logger = LoggerFactory.getLogger(HttpVerticle.class);
 
     @Override
     public void start() throws Exception {
@@ -28,27 +27,27 @@ public final class HttpVerticle extends AbstractVerticle {
 
         router.route("/sftp/*").handler(BodyHandler.create());
 
-        router.get("/sftp/info").produces("application/json").handler(HttpRequestFacade::fetchInfoHandler);
+        router.get(UrlPath.SFTP_INFO).produces(MediaType.APPLICATION_JSON).handler(HttpRequestFacade::fetchInfoHandler);
 
-        router.post("/sftp/login").consumes("*/json").produces("application/json").blockingHandler(HttpRequestFacade::loginHandler, false);
+        router.post(UrlPath.SFTP_LOGIN).consumes(MediaType.APPLICATION_JSON).produces(MediaType.APPLICATION_JSON).blockingHandler(HttpRequestFacade::loginHandler, false);
 
-        router.post("/sftp/transfer/prepare").consumes("*/json").produces("application/json").handler(HttpRequestFacade::transferPrepareHandler);
+        router.post(UrlPath.SFTP_TRANSFER_PREPARE).consumes(MediaType.APPLICATION_JSON).produces(MediaType.APPLICATION_JSON).handler(HttpRequestFacade::transferPrepareHandler);
 
-        router.post("/sftp/transfer/start").consumes("*/json").produces("application/json").handler(HttpRequestFacade::transferStartHandler);
+        router.post(UrlPath.SFTP_TRANSFER_START).consumes(MediaType.APPLICATION_JSON).produces(MediaType.APPLICATION_JSON).handler(HttpRequestFacade::transferStartHandler);
 
-        router.get("/sftp/list").produces("application/json").blockingHandler(HttpRequestFacade::listHandler, false);
+        router.get(UrlPath.SFTP_LIST).produces(MediaType.APPLICATION_JSON).blockingHandler(HttpRequestFacade::listHandler, false);
 
-        router.get("/sftp/upload/reference").produces("text/plain").handler(HttpRequestFacade::getReferenceHandler);
+        router.get(UrlPath.SFTP_UPLOAD_REFERENCE).produces(MediaType.TEXT_PLAIN).handler(HttpRequestFacade::getReferenceHandler);
 
-        router.delete("/sftp/upload/reference").consumes("text/plain").handler(HttpRequestFacade::deleteReferenceHandler);
+        router.delete(UrlPath.SFTP_UPLOAD_REFERENCE).consumes(MediaType.TEXT_PLAIN).handler(HttpRequestFacade::deleteReferenceHandler);
 
-        router.delete("/sftp/delete").consumes("*/json").blockingHandler(HttpRequestFacade::deleteHandler, false);
+        router.delete(UrlPath.SFTP_DELETE).consumes(MediaType.APPLICATION_JSON).blockingHandler(HttpRequestFacade::deleteHandler, false);
 
-        router.delete("/sftp/disconnect").produces("application/json").handler(HttpRequestFacade::disconnectHandler);
+        router.delete(UrlPath.SFTP_DISCONNECT).produces(MediaType.APPLICATION_JSON).handler(HttpRequestFacade::disconnectHandler);
 
-        router.post("/sftp/create").consumes("application/json").handler(HttpRequestFacade::createFolderHandler);
+        router.post(UrlPath.SFTP_CREATE).consumes(MediaType.APPLICATION_JSON).handler(HttpRequestFacade::createFolderHandler);
 
-        router.post("/sftp/rename").consumes("application/json").handler(HttpRequestFacade::renameHandler);
+        router.post(UrlPath.SFTP_RENAME).consumes(MediaType.APPLICATION_JSON).handler(HttpRequestFacade::renameHandler);
 
         router.route().handler(StaticHandler.create());
         router.route("/static/*").handler(StaticHandler.create());

@@ -20,4 +20,9 @@ public final class JsonPropertyName {
     public static final String MESSAGE = "message";
     public static final String NEW_NAME = "new_name";
     public static final String OLD_NAME = "old_name";
+    public static final String FROM = "from";
+    public static final String TO = "to";
+    public static final String SESSION_ID = "session_id";
+    public static final String NAME = "name";
+    public static final String TYPE = "type";
 }

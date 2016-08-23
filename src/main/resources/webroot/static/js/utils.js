@@ -102,9 +102,9 @@ function create_ws_connection() {
     // This is for local testing
     var endpoint
     if (server_info['ssl']) {
-        endpoint = 'wss://' + server_info['name'] + ':' + server_info['ws_port'] + '/ws';
+        endpoint = 'wss://' + server_info['name'] + ':' + server_info['ws_port'] + '/sftp/ws';
     } else {
-        endpoint = 'ws://' + server_info['name'] + ':' + server_info['ws_port'] + '/ws';
+        endpoint = 'ws://' + server_info['name'] + ':' + server_info['ws_port'] + '/sftp/ws';
     }
     // This is for testing server without ssl
     // var endpoint = 'ws://tryggve.cbu.uib.no:80/websocket';
@@ -273,10 +273,10 @@ function createUploadUrl(target) {
         schema = "http";
     }
     if (target == 'host1') {
-        return schema + "://" + server_info['name'] + ":" + server_info['upload_port'] + "/upload?path=" + extractPath($(".host1-path-link").last().attr("href"));
+        return schema + "://" + server_info['name'] + ":" + server_info['upload_port'] + "/sftp/upload?path=" + extractPath($(".host1-path-link").last().attr("href"));
     }
     if (target == 'host2') {
-        return schema + "://" + server_info['name'] + ":" + server_info['upload_port'] + "/upload?path=" + extractPath($(".host2-path-link").last().attr("href"));
+        return schema + "://" + server_info['name'] + ":" + server_info['upload_port'] + "/sftp/upload?path=" + extractPath($(".host2-path-link").last().attr("href"));
     }
 }
 

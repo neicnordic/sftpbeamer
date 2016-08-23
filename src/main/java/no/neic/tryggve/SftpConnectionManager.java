@@ -15,8 +15,12 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
+/**
+ * This class is used to manage the sftp connection.
+ */
 public final class SftpConnectionManager {
-    private static final Logger logger = LoggerFactory.getLogger(SftpConnectionManager.class);
+    private static final String HOST1 = "host1";
+    private static final String HOST2 = "host2";
 
     private static SftpConnectionManager manager;
 
@@ -27,9 +31,10 @@ public final class SftpConnectionManager {
         return manager;
     }
 
+    /**
+     * The sftpConnectionHolderMap is used to keep the sftp connections of a user. The key is the session id.
+     */
     private Map<String, SftpConnectionHolder> sftpConnectionHolderMap;
-    private String HOST1 = "host1";
-    private String HOST2 = "host2";
 
     private SftpConnectionManager() {
         sftpConnectionHolderMap = new HashMap<>();
