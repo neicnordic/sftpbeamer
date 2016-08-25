@@ -10,7 +10,6 @@ public final class JsonPropertyName {
     public static final String PATH = "path";
     public static final String DATA = "data";
     public static final String HOME = "home";
-    public static final String ADDRESS = "address";
     public static final String STATUS = "status";
     public static final String FILE = "file";
     public static final String FOLDER = "folder";
@@ -22,7 +21,6 @@ public final class JsonPropertyName {
     public static final String OLD_NAME = "old_name";
     public static final String FROM = "from";
     public static final String TO = "to";
-    public static final String SESSION_ID = "session_id";
     public static final String NAME = "name";
     public static final String TYPE = "type";
 }

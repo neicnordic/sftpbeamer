@@ -3,24 +3,21 @@ package no.neic.tryggve;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
-import com.jcraft.jsch.SftpProgressMonitor;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import io.vertx.core.shareddata.LocalMap;
-import io.vertx.core.shareddata.SharedData;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.Session;
-import no.neic.tryggve.constants.*;
+import no.neic.tryggve.constants.HostName;
+import no.neic.tryggve.constants.JsonPropertyName;
+import no.neic.tryggve.constants.UrlParam;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
 import java.nio.file.FileSystems;
 import java.util.List;
-import java.util.UUID;
 import java.util.Vector;
 
 public final class HttpRequestFacade {
@@ -302,103 +299,6 @@ public final class HttpRequestFacade {
     }
 
     /**
-     * This method is used to start the data transfer. Because data transfer may take longer time, the transfer job will happen in
-     * a dedicated thread. The request body looks like {"from": {"name": "", "path": ""}, "data": [], "to": {"name": "", "path": ""}, "address": ""}.
-     *
-     */
-    public static void transferStartHandler(RoutingContext routingContext) {
-        JsonObject requestJsonBody = routingContext.getBodyAsJson();
-        JsonObject fromJsonObject = requestJsonBody.getJsonObject(JsonPropertyName.FROM);
-        JsonObject toJsonObject = requestJsonBody.getJsonObject(JsonPropertyName.TO);
-        String messageAddress = requestJsonBody.getString(JsonPropertyName.ADDRESS);
-
-        if (fromJsonObject == null || toJsonObject == null || StringUtils.isEmpty(messageAddress)) {
-            routingContext.response().setStatusCode(HttpResponseStatus.BAD_REQUEST.code()).end();
-        } else {
-            String fromPath = fromJsonObject.getString(JsonPropertyName.PATH);
-            String fromName = fromJsonObject.getString(JsonPropertyName.NAME);
-            String toPath = toJsonObject.getString(JsonPropertyName.PATH);
-            String toName = toJsonObject.getString(JsonPropertyName.NAME);
-            JsonArray filesArray = requestJsonBody.getJsonArray(JsonPropertyName.DATA);
-
-            if (StringUtils.isEmpty(fromPath)
-                    || StringUtils.isEmpty(fromName)
-                    || StringUtils.isEmpty(toPath)
-                    || StringUtils.isEmpty(toName)
-                    || filesArray == null || filesArray.size() == 0) {
-                routingContext.response().setStatusCode(HttpResponseStatus.BAD_REQUEST.code()).end();
-            } else {
-                Session session = routingContext.session();
-                String sessionId = session.id();
-
-                EventBus bus = routingContext.vertx().eventBus();
-                routingContext.vertx().executeBlocking(future -> {
-
-                    ChannelSftp channelSftpFrom = null;
-                    ChannelSftp channelSftpTo = null;
-                    try {
-                        channelSftpFrom = SftpConnectionManager.getManager().getSftpConnection(sessionId, fromName);
-                        channelSftpTo = SftpConnectionManager.getManager().getSftpConnection(sessionId, toName);
-
-                        if (channelSftpFrom == null || channelSftpTo == null) {
-                            throw new JSchException();
-                        }
-
-                        SftpProgressMonitor monitor = new ProgressMonitor(bus, messageAddress);
-                        JsonObject jsonObject = new JsonObject();
-
-                        logger.debug("Start to transfer data from {} to {}", fromPath, toPath);
-
-                        for (Object object : filesArray) {
-                            String fromFile = StringUtils.join(fromPath, SEPARATOR, object.toString());
-                            String toFile = StringUtils.join(toPath, SEPARATOR, object.toString());
-                            try {
-                                jsonObject.put(JsonPropertyName.STATUS, TransferStatus.START)
-                                        .put(JsonPropertyName.ADDRESS, messageAddress)
-                                        .put(JsonPropertyName.FILE, fromFile);
-
-                                bus.publish(VertxConstant.TRANSFER_EVENTBUS_NAME, jsonObject.encode());
-
-                                logger.debug("Transfer file from {} to {}", fromFile, toFile);
-                                channelSftpFrom.get(fromFile, channelSftpTo.put(toFile), monitor);
-                            } catch (SftpException e) {
-                                logger.debug("Failed to transfer file {}", fromFile);
-                                logger.error(e);
-                                jsonObject.clear();
-                                jsonObject.put(JsonPropertyName.STATUS, TransferStatus.FAILED)
-                                        .put(JsonPropertyName.ADDRESS, messageAddress)
-                                        .put(JsonPropertyName.FILE, fromFile);
-
-                                bus.publish(VertxConstant.TRANSFER_EVENTBUS_NAME, jsonObject.encode());
-                            }
-                            jsonObject.clear();
-                        }
-                        bus.publish(VertxConstant.TRANSFER_EVENTBUS_NAME, new JsonObject().put(JsonPropertyName.STATUS, TransferStatus.FINISH).put(JsonPropertyName.ADDRESS, messageAddress).encode());
-
-                        logger.debug("Data transfer from {} to {} is done.", fromPath, toPath);
-                    } catch (JSchException e) {
-                        logger.debug("Failed to start data transfer from {} to {}", fromPath, toPath);
-                        logger.error(e);
-                        bus.publish(VertxConstant.TRANSFER_EVENTBUS_NAME,
-                                new JsonObject().put(JsonPropertyName.STATUS, TransferStatus.ERROR)
-                                        .put(JsonPropertyName.ADDRESS, messageAddress)
-                                        .put(JsonPropertyName.MESSAGE, StringUtils.isNotEmpty(e.getMessage()) ? e.getMessage() : "Internal Error").encode());
-                    } finally {
-                        if (channelSftpFrom != null && channelSftpFrom.isConnected()) {
-                            channelSftpFrom.disconnect();
-                        }
-                        if (channelSftpTo != null && channelSftpTo.isConnected()) {
-                            channelSftpTo.disconnect();
-                        }
-                    }
-                }, false, result -> {});
-
-                routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
-            }
-        }
-    }
-
-    /**
      * This method is used to list content of a folder.
      *
      */
@@ -435,33 +335,6 @@ public final class HttpRequestFacade {
                 }
             }
         }
-    }
-
-    public static void getReferenceHandler(RoutingContext routingContext) {
-        String source = routingContext.request().getParam(UrlParam.SOURCE);
-        String sessionId = routingContext.session().id();
-
-
-        SharedData sharedData = routingContext.vertx().sharedData();
-        LocalMap<String, JsonObject> localMap = sharedData.getLocalMap(VertxConstant.UPLOAD_LOCALMAP_NAME);
-        String uuid = UUID.randomUUID().toString();
-
-
-        JsonObject jsonObject = new JsonObject();
-        jsonObject.put(JsonPropertyName.SOURCE, source);
-        jsonObject.put(JsonPropertyName.SESSION_ID, sessionId);
-        localMap.put(uuid, jsonObject);
-
-        routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(uuid);
-    }
-
-    public static void deleteReferenceHandler(RoutingContext routingContext) {
-        String reference = routingContext.getBodyAsString();
-        SharedData sharedData = routingContext.vertx().sharedData();
-        LocalMap<String, JsonObject> localMap = sharedData.getLocalMap(VertxConstant.UPLOAD_LOCALMAP_NAME);
-
-        localMap.remove(reference);
-        routingContext.response().setStatusCode(HttpResponseStatus.NO_CONTENT.code()).end();
     }
 
     /**

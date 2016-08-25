@@ -402,12 +402,11 @@ function transferData(eventData) {
                         keyboard: false
                     });
 
-                    var messageAddress = generateId(40);
+
                     if (target == "host1") {
                         transfer_target = "host2";
 
                         transferredData = JSON.stringify({
-                            "address": messageAddress,
                             "from": {"path": from_path, "name": "host1"},
                             "to": {"path": to_path, "name": "host2"},
                             "data": returnedData
@@ -416,7 +415,6 @@ function transferData(eventData) {
                         transfer_target = "host1";
 
                         transferredData = JSON.stringify({
-                            "address": messageAddress,
                             "from": {"path": from_path, "name": "host2"},
                             "to": {"path": to_path, "name": "host1"},
                             "data": returnedData
@@ -425,27 +423,11 @@ function transferData(eventData) {
 
 
                     var ws = create_ws_connection();
-                    ws.onopen = function () {
-                        ws.send(JSON.stringify({
-                            "address": messageAddress}));
+                    ws.onopen = function (event) {
+                        ws.send(transferredData);
                     };
                     ws.onmessage = function (event) {
                         var message = JSON.parse(event.data);
-                        if (message["status"] == "connected") {
-                            $.ajax({
-                                type: "POST",
-                                url: "/sftp/transfer/start",
-                                data: transferredData,
-                                dataType: "json",
-                                contentType: 'application/json; charset=utf-8',
-                                statusCode: {
-                                    200: function () {}
-                                },
-                                error: function (jqXhR, textStatus, errorThrown) {
-                                    //TODO
-                                }
-                            });
-                        }
                         if (message["status"] == "start") {
                             $('.progress-bar').text("0%");
                             $('#transferred-file-name').text(message["file"])
@@ -479,7 +461,8 @@ function transferData(eventData) {
                             showErrorAlertInTop(target, message["message"], "", "Can't transfer data.");
                         }
                     };
-                    ws.onclose = function () {};
+                    ws.onclose = function () {
+                    };
                 }
             },
             error: function (jqXhR, textStatus, errorThrown) {
