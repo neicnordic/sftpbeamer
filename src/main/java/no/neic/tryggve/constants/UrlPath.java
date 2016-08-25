@@ -6,7 +6,6 @@ public final class UrlPath {
     public static final String SFTP_TRANSFER_PREPARE = "/sftp/transfer/prepare";
     public static final String SFTP_TRANSFER_START = "/sftp/transfer/start";
     public static final String SFTP_LIST = "/sftp/list";
-    public static final String SFTP_UPLOAD_REFERENCE = "/sftp/upload/reference";
     public static final String SFTP_DELETE = "/sftp/delete";
     public static final String SFTP_DISCONNECT = "/sftp/disconnect";
     public static final String SFTP_CREATE = "/sftp/create";

@@ -13,7 +13,6 @@ public class App extends AbstractVerticle {
         Vertx vertx = Vertx.vertx();
         vertx.deployVerticle(HttpVerticle.class.getName());
         vertx.deployVerticle(WebSocketVerticle.class.getName());
-        vertx.deployVerticle(UploadVerticle.class.getName());
 
     }
 
@@ -29,7 +28,6 @@ public class App extends AbstractVerticle {
         Config.init();
         vertx.deployVerticle(HttpVerticle.class.getName());
         vertx.deployVerticle(WebSocketVerticle.class.getName());
-        vertx.deployVerticle(UploadVerticle.class.getName());
     }
 
 }

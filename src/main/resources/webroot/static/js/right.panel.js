@@ -22,7 +22,7 @@ $(document).ready(function () {
 
     $('#host2-delete-btn').click({target: "host2"}, deleteData);
 
-    $('#host2-upload-btn').click({target: "host2"}, getUploadReference);
+    $('#host2-upload-btn').click({target: "host2"}, uploadData);
 
     $('#host2-create-btn').click({target: "host2"}, showFolderModal);
 

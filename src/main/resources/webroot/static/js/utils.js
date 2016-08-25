@@ -7,12 +7,8 @@ var server_info;
 
 var transfer_target;
 var upload_target;
-var host_upload_reference;
 var uploaded_files_array;
 var progress_bar_group;
-var upload_url;
-var host1_upload_url;
-var host2_upload_url;
 
 function createTable(name, home, content) {
     if (name == 'host1') {
@@ -265,48 +261,14 @@ function refresh_target_host(target) {
     });
 }
 
-function createUploadUrl(target) {
-    var schema;
-    if (server_info['ssl']) {
-        schema = "https";
-    } else {
-        schema = "http";
-    }
-    if (target == 'host1') {
-        return schema + "://" + server_info['name'] + ":" + server_info['upload_port'] + "/sftp/upload?path=" + extractPath($(".host1-path-link").last().attr("href"));
-    }
-    if (target == 'host2') {
-        return schema + "://" + server_info['name'] + ":" + server_info['upload_port'] + "/sftp/upload?path=" + extractPath($(".host2-path-link").last().attr("href"));
-    }
-}
-
-function getUploadReference(eventData) {
+function uploadData(eventData) {
     var target = eventData.data['target'];
-    $.ajax({
-        url: "/sftp/upload/reference?source=" + target,
-        method: "GET",
-        contents: "text/plain",
-        statusCode: {
-            200: function (reference) {
-                host_upload_reference = reference;
-                uploaded_files_array = [];
-                progress_bar_group = {};
-                upload_target = target;
-                if (upload_target == 'host1') {
-                    upload_url = host1_upload_url;
-                }
-                if (upload_target == 'host2') {
-                    upload_url = host2_upload_url;
-                }
-                $('#upload_progress_group').empty();
-                $('#upload_modal').modal({
-                    keyboard: false
-                });
-            }
-        },
-        error: function (jqXhR, textStatus, errorThrown) {
-            showErrorAlertInTop(target, jqXhR.responseText, errorThrown, "Can't upload data.");
-        }
+    uploaded_files_array = [];
+    progress_bar_group = {};
+    upload_target = target;
+    $('#upload_progress_group').empty();
+    $('#upload_modal').modal({
+        keyboard: false
     });
 }
 
@@ -554,7 +516,6 @@ function clickOnPath(event) {
                         }
                     });
                 }
-                host1_upload_url = createUploadUrl(target);
                 reloadTableData(returnedData["data"], path, target);
             }
         },
@@ -579,10 +540,10 @@ function clickOnFolder(event) {
                 var path = returnedData["path"];
                 if (target == "host1") {
                     $("#host1-path").append('<a class="host1-path-link" href="/sftp/list?path=' + path + '&source=host1">' + folder_name + '/</a>');
-                    host1_upload_url = createUploadUrl("host1");
+
                 } else if (target == "host2") {
                     $("#host2-path").append('<a class="host2-path-link" href="/sftp/list?path=' + path + '&source=host2">' + folder_name + '/</a>');
-                    host2_upload_url = createUploadUrl("host2");
+
                 }
 
                 reloadTableData(returnedData["data"], path, target);

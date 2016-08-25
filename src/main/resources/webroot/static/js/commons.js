@@ -54,8 +54,7 @@ $(document).ready(function () {
         url: '',
         dataType: 'json',
         add: function (e, data) {
-            data.url = upload_url;
-            data.headers = {'Reference': host_upload_reference};
+            data.url = "/sftp/upload?path=" + extractPath($("." + upload_target + "-path-link").last().attr("href")) + "&source=" + upload_target;
             var fileName = data.files[0].name;
             var upload_progress_group = $('#upload_progress_group');
             var progress_bar_index = upload_progress_group.children().length + 1;
@@ -81,20 +80,6 @@ $(document).ready(function () {
     });
 
     $('#upload_modal').on('hide.bs.modal', function () {
-        $.ajax({
-            url: "/sftp/upload/reference",
-            method: "DELETE",
-            contentType: "text/plain",
-            data: host_upload_reference,
-            statusCode: {
-                204: function () {
-                    //TODO
-                }
-            },
-            error: function () {
-                //TODO
-            }
-        });
         refresh_target_host(upload_target);
     });
 

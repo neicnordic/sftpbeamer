@@ -2,8 +2,9 @@ package no.neic.tryggve;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CookieHandler;
 import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.StaticHandler;
@@ -14,6 +15,7 @@ import no.neic.tryggve.constants.UrlPath;
 import javax.ws.rs.core.MediaType;
 
 public final class HttpVerticle extends AbstractVerticle {
+    private static Logger logger = LoggerFactory.getLogger(HttpVerticle.class);
 
     @Override
     public void start() throws Exception {
@@ -25,7 +27,7 @@ public final class HttpVerticle extends AbstractVerticle {
 
         router.route().handler(SessionHandler.create(LocalSessionStore.create(vertx)));
 
-        router.route("/sftp/*").handler(BodyHandler.create());
+        router.route("/sftp/*").handler(new HttpBodyHandler());
 
         router.get(UrlPath.SFTP_INFO).produces(MediaType.APPLICATION_JSON).handler(HttpRequestFacade::fetchInfoHandler);
 
@@ -36,10 +38,6 @@ public final class HttpVerticle extends AbstractVerticle {
         router.post(UrlPath.SFTP_TRANSFER_START).consumes(MediaType.APPLICATION_JSON).produces(MediaType.APPLICATION_JSON).handler(HttpRequestFacade::transferStartHandler);
 
         router.get(UrlPath.SFTP_LIST).produces(MediaType.APPLICATION_JSON).blockingHandler(HttpRequestFacade::listHandler, false);
-
-        router.get(UrlPath.SFTP_UPLOAD_REFERENCE).produces(MediaType.TEXT_PLAIN).handler(HttpRequestFacade::getReferenceHandler);
-
-        router.delete(UrlPath.SFTP_UPLOAD_REFERENCE).consumes(MediaType.TEXT_PLAIN).handler(HttpRequestFacade::deleteReferenceHandler);
 
         router.delete(UrlPath.SFTP_DELETE).consumes(MediaType.APPLICATION_JSON).blockingHandler(HttpRequestFacade::deleteHandler, false);
 
