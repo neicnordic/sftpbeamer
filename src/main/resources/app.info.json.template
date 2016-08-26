@@ -2,7 +2,6 @@
   "server": {
     "name": "localhost",
     "ws_port": 8081,
-    "upload_port": 8082,
     "ssl": false
   },
   "hosts": {
