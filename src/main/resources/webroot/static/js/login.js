@@ -74,6 +74,7 @@ $(document).ready(function() {
             type: "POST",
             url: "/sftp/login",
             data: JSON.stringify(requestData),
+            timeout: 5000,
             statusCode: {
                 200: function (returnedData) {
                     disable_waiting_box();
@@ -86,12 +87,6 @@ $(document).ready(function() {
                     $("#" + target + "-username").prop("disabled", true);
                     $("#" + target + "-hostname").prop("disabled", true);
                     $("#" + target + "-port").prop("disabled", true);
-                    if (target == "host1") {
-                        host1_upload_url = createUploadUrl(target);
-                    }
-                    if (target == "host2") {
-                        host2_upload_url = createUploadUrl(target);
-                    }
                 }
             },
             error: function (jqXhR, textStatus, errorThrown) {
