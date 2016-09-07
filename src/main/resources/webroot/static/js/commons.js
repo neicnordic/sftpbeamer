@@ -100,15 +100,7 @@ $(document).ready(function () {
                 contentType: 'application/json; charset=utf-8',
                 statusCode: {
                     201: function () {
-                        var url = "/sftp/list?path=" + create_folder_path + "&source=" + create_folder_target;
-                        $.ajax({
-                            type: "GET",
-                            url: url,
-                            dataType: "json",
-                            success: function (updatedData) {
-                                reloadTableData(updatedData["data"], updatedData["path"], create_folder_target);
-                            }
-                        });
+                        refresh_target_host(create_folder_target);
                     }
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
@@ -130,15 +122,7 @@ $(document).ready(function () {
                 contentType: 'application/json; charset=utf-8',
                 statusCode: {
                     200: function () {
-                        var url = "/sftp/list?path=" + rename_path + "&source=" + rename_target;
-                        $.ajax({
-                            type: "GET",
-                            url: url,
-                            dataType: "json",
-                            success: function (updatedData) {
-                                reloadTableData(updatedData["data"], updatedData["path"], rename_target);
-                            }
-                        });
+                        refresh_target_host(rename_target);
                     }
                 },
                 error: function (jqXHR, textStatus, errorThrown) {

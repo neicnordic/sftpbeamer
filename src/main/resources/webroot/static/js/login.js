@@ -74,7 +74,6 @@ $(document).ready(function() {
             type: "POST",
             url: "/sftp/login",
             data: JSON.stringify(requestData),
-            timeout: 5000,
             statusCode: {
                 200: function (returnedData) {
                     disable_waiting_box();

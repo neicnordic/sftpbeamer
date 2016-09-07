@@ -10,6 +10,16 @@ var upload_target;
 var uploaded_files_array;
 var progress_bar_group;
 
+var current_ajax_request;
+
+function ajaxAsyncCall(settings) {
+    if (current_ajax_request) {
+        current_ajax_request.abort();
+        current_ajax_request = null;
+    }
+    current_ajax_request = $.ajax(settings);
+}
+
 function createTable(name, home, content) {
     if (name == 'host1') {
         host1_table = $("#host1-table").dataTable({
@@ -125,12 +135,6 @@ function refresh_progress_bar(message) {
     }
 }
 
-function change_modal_property(modal_title, modal_content) {
-    $('#info_modal_label').text(modal_title);
-
-    $('#info_modal .modal-body p').text(modal_content);
-}
-
 function fetch_table(source) {
     if (source == 'host1') {
         return host1_table;
@@ -149,14 +153,6 @@ function set_table(source, table) {
     }
 }
 
-// str generateId(int len);
-// len - must be an even number (default: 40)
-function generateId(len) {
-    var arr = new Uint8Array((len || 40) / 2);
-    window.crypto.getRandomValues(arr);
-    return [].map.call(arr, function(n) { return n.toString(16); }).join("");
-}
-
 function extractPath(href) {
     var path = href.substring(href.indexOf("?") + 1, href.indexOf("&"));
     return path.substring(path.indexOf("=") + 1);
@@ -164,26 +160,30 @@ function extractPath(href) {
 
 function disconnect_sftp(source) {
     if (source == 'host1' || source == 'host2') {
-        $.ajax({
-            type: "DELETE",
-            url: "/sftp/disconnect?source=" + source,
-            statusCode: {
-                200: function () {
-                    fetch_table(source).api().destroy();
-                    $("#" + source + "-table").empty();
-                    $("#" + source + "-table-div").html("");
-                    $("#" + source + "-path").html("");
-                    $("#" + source + "-disconnect-btn").css("display", "none");
-                    $("#" + source + "-submit-btn").css("display", "inline-block");
-                    $("#" + source + "-username").prop("disabled", false);
-                    $("#" + source + "-hostname").prop("disabled", false);
-                    $("#" + source + "-port").prop("disabled", false);
+        ajaxAsyncCall(
+            {
+                type: "DELETE",
+                url: "/sftp/disconnect?source=" + source,
+                statusCode: {
+                    200: function () {
+                        fetch_table(source).api().destroy();
+                        $("#" + source + "-table").empty();
+                        $("#" + source + "-table-div").html("");
+                        $("#" + source + "-path").html("");
+                        $("#" + source + "-disconnect-btn").css("display", "none");
+                        $("#" + source + "-submit-btn").css("display", "inline-block");
+                        $("#" + source + "-username").prop("disabled", false);
+                        $("#" + source + "-hostname").prop("disabled", false);
+                        $("#" + source + "-port").prop("disabled", false);
+                    }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    if (!(errorThrown && errorThrown == "abort")) {
+                        showErrorAlertInTop(source, jqXHR.responseText, errorThrown, 'Disconnection failed.');
+                    }
                 }
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                showErrorAlertInTop(source, jqXHR.responseText, errorThrown, 'Disconnection failed.');
             }
-        });
+        );
     }
 }
 
@@ -245,20 +245,21 @@ function refresh_target_host(target) {
     if (target == 'host2') {
         href = $(".host2-path-link").last().attr("href");
     }
-    $.ajax({
-        type: "GET",
-        url: href,
-        dataType: "json",
-        statusCode: {
-            200: function (returnedData) {
-                var path = returnedData["path"];
-                reloadTableData(returnedData["data"], path, target);
+    ajaxAsyncCall(
+        {
+            type: "GET",
+            url: href,
+            dataType: "json",
+            statusCode: {
+                200: function (returnedData) {
+                    reloadTableData(returnedData["data"], returnedData["path"], target);
+                }
+            },
+            error: function (returnedData) {
+                //TODO
             }
-        },
-        error: function (returnedData) {
-            //TODO
         }
-    });
+    );
 }
 
 function uploadData(eventData) {
@@ -313,29 +314,20 @@ function confirmDelete(eventData) {
         path = extractPath($('.host2-path-link:last').attr('href'));
     }
 
-
-    $.ajax({
+    ajaxAsyncCall({
         type: "DELETE",
         url: "/sftp/delete",
         data: JSON.stringify({"source": target, "path": path, "data": transferredData}),
         contentType: 'application/json; charset=utf-8',
         statusCode: {
             204: function () {
-                var url = "/sftp/list?path=" + path + "&source=" + target;
-                $.ajax({
-                    type: "GET",
-                    url: url,
-                    dataType: "json",
-                    statusCode: {
-                        200: function (updatedData) {
-                            reloadTableData(updatedData["data"], updatedData["path"], target);
-                        }
-                    }
-                });
+                refresh_target_host(target);
             }
         },
         error: function (jqXhR, textStatus, errorThrown) {
-            showErrorAlertInTop(target, jqXhR.responseText, errorThrown, "Deletion failed.");
+            if (!(errorThrown && errorThrown == "abort")) {
+                showErrorAlertInTop(target, jqXhR.responseText, errorThrown, "Deletion failed.");
+            }
         }
     });
 }
@@ -388,7 +380,7 @@ function transferData(eventData) {
             })
         }
 
-        $.ajax({
+        ajaxAsyncCall({
             type: "POST",
             url: "/sftp/transfer/prepare",
             data: transferredData,
@@ -466,10 +458,11 @@ function transferData(eventData) {
                 }
             },
             error: function (jqXhR, textStatus, errorThrown) {
-                showErrorAlertInTop(target, jqXhR.responseText, errorThrown, "Can't transfer data.");
+                if (!(errorThrown && errorThrown == "abort")) {
+                    showErrorAlertInTop(target, jqXhR.responseText, errorThrown, "Can't transfer data.");
+                }
             }
         });
-
     }
 }
 
@@ -479,7 +472,7 @@ function clickOnPath(event) {
     event.preventDefault();
     var href = $(this).attr('href');
 
-    $.ajax({
+    ajaxAsyncCall({
         type: "GET",
         url: href,
         dataType: "json",
@@ -503,7 +496,9 @@ function clickOnPath(event) {
             }
         },
         error: function (jqXhR, textStatus, errorThrown) {
-            showErrorAlertInTop(target, jqXhR.responseText, errorThrown, "Can't list items.");
+            if (!(errorThrown && errorThrown == "abort")) {
+                showErrorAlertInTop(target, jqXhR.responseText, errorThrown, "Can't list items.");
+            }
         }
     });
 }
@@ -514,7 +509,8 @@ function clickOnFolder(event) {
     event.preventDefault();
     var href = $(this).attr('href');
     var folder_name = $(this).text();
-    $.ajax({
+
+    ajaxAsyncCall({
         type: "GET",
         url: href,
         dataType: "json",
@@ -533,7 +529,9 @@ function clickOnFolder(event) {
             }
         },
         error: function (jqXhR, textStatus, errorThrown) {
-            showErrorAlertInTop(target, jqXhR.responseText, errorThrown, "Can't click folder.");
+            if (!(errorThrown && errorThrown == "abort")) {
+                showErrorAlertInTop(target, jqXhR.responseText, errorThrown, "Can't show the folder's content.");
+            }
         }
     });
 }
