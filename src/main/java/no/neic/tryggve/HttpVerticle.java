@@ -60,6 +60,10 @@ public final class HttpVerticle extends AbstractVerticle {
 
         router.post(UrlPath.SFTP_RENAME).consumes(MediaType.APPLICATION_JSON).handler(HttpRequestFacade::renameHandler);
 
+        router.get(UrlPath.SFTP_DOWNLOAD).blockingHandler(HttpRequestFacade::downloadHandler, false);
+
+        router.get(UrlPath.SFTP_ZIP).blockingHandler(HttpRequestFacade::downloadZipHandler, false);
+
         router.route(UrlPath.SFTP_WS).handler(this::webSocketHandler);
 
         router.route().handler(StaticHandler.create());

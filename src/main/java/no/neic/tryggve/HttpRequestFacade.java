@@ -2,8 +2,11 @@ package no.neic.tryggve;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.SftpATTRS;
 import com.jcraft.jsch.SftpException;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
@@ -19,6 +22,8 @@ import java.io.*;
 import java.nio.file.FileSystems;
 import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.zip.ZipOutputStream;
 
 public final class HttpRequestFacade {
     private static final Logger logger = LoggerFactory.getLogger(HttpRequestFacade.class);
@@ -88,6 +93,7 @@ public final class HttpRequestFacade {
             Session session = routingContext.session();
             String sessionId = session.id();
 
+            logger.debug("Session id is {}", sessionId);
             SftpConnectionManager sftpSessionManager = SftpConnectionManager.getManager();
             try {
 
@@ -315,6 +321,7 @@ public final class HttpRequestFacade {
             Session session = routingContext.session();
             String sessionId = session.id();
 
+            logger.debug("Session id is {}", sessionId);
             ChannelSftp channelSftp = null;
             try {
                 channelSftp = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
@@ -400,6 +407,86 @@ public final class HttpRequestFacade {
         }
 
         routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
+    }
+
+    public static void downloadHandler(RoutingContext routingContext) {
+        String source = routingContext.request().getParam(UrlParam.SOURCE);
+        String path = routingContext.request().getParam(UrlParam.PATH);
+        String sessionId = routingContext.session().id();
+        logger.debug("Download file {}", path);
+        logger.debug("Source is {}", source);
+        logger.debug("Session id is {}", sessionId);
+
+        HttpServerResponse response = routingContext.response();
+        response.setWriteQueueMaxSize(4096);
+//        response.setChunked(true);
+        response.putHeader("Content-Disposition", "attachment; filename=\""
+                + path.substring(path.lastIndexOf(FileSystems.getDefault().getSeparator()) + 1) + "\"");
+
+        ChannelSftp channelSftp = null;
+        try {
+            channelSftp = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
+            SftpATTRS attrs = channelSftp.lstat(path);
+            response.putHeader("Content-Length", String.valueOf(attrs.getSize()));
+
+            byte[] bytes = new byte[4096];
+            AtomicBoolean isWritable = new AtomicBoolean(true);
+            try (InputStream inputStream = channelSftp.get(path)) {
+                while (inputStream.read(bytes) != -1) {
+                    while (!isWritable.get()) {
+                        try {
+                            Thread.sleep(3);
+                        } catch (InterruptedException e) {
+                        }
+                    }
+                    response.write(Buffer.buffer().appendBytes(bytes));
+                    if (response.writeQueueFull()) {
+                        isWritable.set(false);
+                        response.drainHandler(Void -> isWritable.set(true));
+                    }
+                }
+                response.end();
+            }
+
+        } catch (JSchException | SftpException | IOException e) {
+            logger.error(e);
+            routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
+        } finally {
+            if (channelSftp != null && channelSftp.isConnected()) {
+                channelSftp.disconnect();
+            }
+        }
+
+    }
+
+    public static void downloadZipHandler(RoutingContext routingContext) {
+        String source = routingContext.request().getParam(UrlParam.SOURCE);
+        String path = routingContext.request().getParam(UrlParam.PATH);
+        String sessionId = routingContext.session().id();
+        String rootPath = path.substring(0, path.lastIndexOf(SEPARATOR));
+        String relativePath = path.substring(path.lastIndexOf(SEPARATOR) + 1);
+
+        HttpServerResponse response = routingContext.response();
+        response.setWriteQueueMaxSize(4096);
+        response.setChunked(true);
+        response.putHeader("Content-Disposition", "attachment; filename=\""
+                + relativePath + ".zip" + "\"");
+        response.putHeader("Content-Type", "application/zip");
+
+        AtomicBoolean isWritable = new AtomicBoolean(true);
+        ChannelSftp channelSftp = null;
+        try (ZipOutputStream zipOutputStream = new ZipOutputStream(new DownloadZipOutputStream(response, isWritable))) {
+            channelSftp = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
+            FolderNode folderNode = new FolderNode(zipOutputStream, channelSftp, rootPath, relativePath, isWritable);
+            folderNode.startToZip();
+            zipOutputStream.flush();
+        } catch (IOException | JSchException | SftpException e) {
+            logger.error(e);
+        } finally {
+            if (channelSftp != null && channelSftp.isConnected()) {
+                channelSftp.disconnect();
+            }
+        }
     }
 
     /**

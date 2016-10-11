@@ -19,6 +19,8 @@ import java.util.Optional;
  * This class is used to manage the sftp connection.
  */
 public final class SftpConnectionManager {
+    private static Logger logger = LoggerFactory.getLogger(SftpConnectionManager.class);
+
     private static final String HOST1 = "host1";
     private static final String HOST2 = "host2";
 
@@ -70,16 +72,22 @@ public final class SftpConnectionManager {
     }
 
     public ChannelSftp getSftpConnection(String sessionId, String source) throws JSchException{
+        ChannelSftp channelSftp;
         if (source.equals(HOST1)) {
-            return openSftpChannel(this.sftpConnectionHolderMap.get(sessionId).getHost1());
+            logger.debug("SftpConnectionHolder is null {}", this.sftpConnectionHolderMap.get(sessionId) == null);
+            logger.debug("Sftp session is null {}", this.sftpConnectionHolderMap.get(sessionId).getHost1() == null);
+            channelSftp = openSftpChannel(this.sftpConnectionHolderMap.get(sessionId).getHost1());
         } else if (source.equals(HOST2)) {
-            return openSftpChannel(this.sftpConnectionHolderMap.get(sessionId).getHost2());
+            channelSftp = openSftpChannel(this.sftpConnectionHolderMap.get(sessionId).getHost2());
         } else {
-            return null;
+            channelSftp = null;
         }
+        logger.debug("Sftp channel is null {}", channelSftp == null);
+        return channelSftp;
     }
 
     public void disconnectSftp(String sessionId, String source) {
+
         if (sftpConnectionHolderMap.containsKey(sessionId)) {
             if (source.equals(HOST1) && sftpConnectionHolderMap.get(sessionId).getHost1() != null) {
                 sftpConnectionHolderMap.get(sessionId).getHost1().disconnect();
@@ -94,6 +102,7 @@ public final class SftpConnectionManager {
     }
 
     public void disconnectSftp(String sessionId) {
+        logger.debug("Remove session id {} ===============", sessionId);
         if (sftpConnectionHolderMap.containsKey(sessionId)) {
             if (sftpConnectionHolderMap.get(sessionId).getHost1() != null) {
                 sftpConnectionHolderMap.get(sessionId).getHost1().disconnect();

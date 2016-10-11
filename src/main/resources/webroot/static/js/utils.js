@@ -46,12 +46,22 @@ function createTable(name, home, content) {
                     }
                 }
             }, {
+                "title": "",
+                "render": function (data, type, full, meta) {
+                    var isFoler = full[2];
+                    var name = full[0];
+                    if (isFoler == "folder") {
+                        return '<a target="_blank" href="/sftp/zip?path=' + home + '/' + name + '&source=host1"><i class="fa fa-download"></i></a>';
+                    } else {
+                        return '<a target="_blank" href="/sftp/download?path=' + home + '/' + name + '&source=host1"><i class="fa fa-download"></i></a>';
+                    }
+                },
+                "orderable": false
+            }, {
                 "title": "Size",
                 "render": function (data, type, full, meta) {
-                    return convertBytes(data);
+                    return convertBytes(full[1]);
                 }
-            }, {
-                "visible": false
             }]
         });
     } else if (name == 'host2') {
@@ -79,12 +89,22 @@ function createTable(name, home, content) {
                     }
                 }
             }, {
-                "title": "Size",
+                "orderable": false,
+                "title": "",
                 "render": function (data, type, full, meta) {
-                    return convertBytes(data);
+                    var isFoler = full[2];
+                    var name = full[0];
+                    if (isFoler == "folder") {
+                        return '<a target="_blank" href="/sftp/zip?path=' + home + '/' + name + '&source=host2"><i class="fa fa-download"></i></a>';
+                    } else {
+                        return '<a target="_blank" href="/sftp/download?path=' + home + '/' + name + '&source=host2"><i class="fa fa-download"></i></a>';
+                    }
                 }
             }, {
-                "visible": false
+                "title": "Size",
+                "render": function (data, type, full, meta) {
+                    return convertBytes(full[1]);
+                }
             }]
         });
     }
@@ -226,12 +246,30 @@ function reloadTableData(updatedData, path, source) {
                 }
             }
         }, {
-            "title": "Size",
+            "orderable": false,
+            "title": "",
             "render": function (data, type, full, meta) {
-                return convertBytes(data);
+                var isFoler = full[2];
+                var name = full[0];
+                if (isFoler == "folder") {
+                    if (path == "/") {
+                        return '<a target="_blank" href="/sftp/zip?path=' + path + name + '&source=' + source + '"><i class="fa fa-download"></i></a>';
+                    } else {
+                        return '<a target="_blank" href="/sftp/zip?path=' + path + '/' + name + '&source=' + source + '"><i class="fa fa-download"></i></a>';
+                    }
+                } else {
+                    if (path == "/") {
+                        return '<a target="_blank" href="/sftp/download?path=' + path + name + '&source=' + source + '"><i class="fa fa-download"></i></a>';
+                    } else {
+                        return '<a target="_blank" href="/sftp/download?path=' + path + '/' + name + '&source=' + source + '"><i class="fa fa-download"></i></a>';
+                    }
+                }
             }
         }, {
-            "visible": false
+            "title": "Size",
+            "render": function (data, type, full, meta) {
+                return convertBytes(full[1]);
+            }
         }]
     };
     set_table(source, $("#" + source + "-table").dataTable(settings));

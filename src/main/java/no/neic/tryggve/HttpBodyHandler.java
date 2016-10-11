@@ -8,10 +8,10 @@ public final class HttpBodyHandler extends BodyHandlerImpl{
 
     @Override
     public void handle(RoutingContext context) {
-        if (!context.request().path().equals(UrlPath.SFTP_UPLOAD)) {
-            super.handle(context);
-        } else {
+        if (context.request().path().equals(UrlPath.SFTP_UPLOAD)) {
             HttpRequestFacade.uploadHandler(context);
+        } else {
+            super.handle(context);
         }
     }
 }

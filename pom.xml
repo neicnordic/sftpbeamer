@@ -35,7 +35,7 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-web</artifactId>
-            <version>3.3.2</version>
+            <version>3.3.3</version>
         </dependency>
 
         <!-- Sftp -->
