@@ -23,9 +23,9 @@ The SFTP Beamer is initially motivated by the [Tryggve](https://wiki.neic.no/wik
 There is a running SFTP Beamer application at https://tryggve.cbu.uib.no. Welcome to try it.
 
 ##Functionality <a name="functionality"></a>
-The SFTP Beamer provides the following functions. After having connected to a server, right-click on the content area to show a functionality menu. For transfer, delete and rename functions, you have to left-click to select item(s) first.
+The SFTP Beamer provides the following functions. After having connected to a server, right-click on the content area to show a functionality menu. For transfer, delete and rename functions, you have to left-click to select item(s) first. Besides, you are allowed to download a file or a folder as a zip file.
 
-![Functionality menu](http://imgur.com/dqPz904.png)
+![Functionality menu](http://i.imgur.com/nhbVjSq.png)
 
 - Connect to two SFTP/SSH servers at the same time
 - Navigate the directory hierarchy
@@ -34,6 +34,8 @@ The SFTP Beamer provides the following functions. After having connected to a se
 - Delete multiple files/folders 
 - Rename a file or folder
 - Create a folder
+- Download a file
+- Download a folder as a zip file
 
 ##System Overview <a name="overview"></a>
 From [requirements](https://github.com/neicnordic/sftpbeamer/blob/master/requirements.txt), you could find what frameworks and tools are needed.
@@ -47,7 +49,7 @@ Because one of purposes SFTP Beamer has is to transfer sensitive data through se
 
 - The SFTP Beamer is using https.
 - The SFTP Beamer never keeps the credential a user is using to connect to a SFTP/SSH server.
-- The SFTP Beamer never caches the uploaded or transferred data. The data will only pass by the memory of server where SFTP   Beamer is running. 
+- The SFTP Beamer never caches the downloaded, uploaded or transferred data. The data will only pass by the memory of server where SFTP Beamer is running. 
 - The SFTP Beamer is using session id to distinguish the different SFTP/SSH connections kept in the memory.
 
 ##Deployment <a name="deployment"></a>

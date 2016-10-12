@@ -1,6 +1,6 @@
 Java v8
 Maven v3+
-Vert.x v3.3.2+
+Vert.x v3.3.3+
 jQuery v3.0+
 Bootstrap v3.3.0+
 DataTables plug-in for jQuery v1.10.0+
