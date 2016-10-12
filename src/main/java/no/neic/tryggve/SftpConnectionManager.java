@@ -1,36 +1,24 @@
 package no.neic.tryggve;
 
 
-
-
 import com.jcraft.jsch.*;
-import io.vertx.core.cli.InvalidValueException;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Optional;
 
 /**
  * This class is used to manage the sftp connection.
  */
 public final class SftpConnectionManager {
-    private static Logger logger = LoggerFactory.getLogger(SftpConnectionManager.class);
-
     private static final String HOST1 = "host1";
     private static final String HOST2 = "host2";
 
-    private static SftpConnectionManager manager;
+    private static SftpConnectionManager instance = new SftpConnectionManager();
 
     public static SftpConnectionManager getManager() {
-        if (manager == null) {
-            manager = new SftpConnectionManager();
-        }
-        return manager;
+        return instance;
     }
 
     /**
@@ -74,15 +62,12 @@ public final class SftpConnectionManager {
     public ChannelSftp getSftpConnection(String sessionId, String source) throws JSchException{
         ChannelSftp channelSftp;
         if (source.equals(HOST1)) {
-            logger.debug("SftpConnectionHolder is null {}", this.sftpConnectionHolderMap.get(sessionId) == null);
-            logger.debug("Sftp session is null {}", this.sftpConnectionHolderMap.get(sessionId).getHost1() == null);
             channelSftp = openSftpChannel(this.sftpConnectionHolderMap.get(sessionId).getHost1());
         } else if (source.equals(HOST2)) {
             channelSftp = openSftpChannel(this.sftpConnectionHolderMap.get(sessionId).getHost2());
         } else {
             channelSftp = null;
         }
-        logger.debug("Sftp channel is null {}", channelSftp == null);
         return channelSftp;
     }
 
@@ -102,7 +87,6 @@ public final class SftpConnectionManager {
     }
 
     public void disconnectSftp(String sessionId) {
-        logger.debug("Remove session id {} ===============", sessionId);
         if (sftpConnectionHolderMap.containsKey(sessionId)) {
             if (sftpConnectionHolderMap.get(sessionId).getHost1() != null) {
                 sftpConnectionHolderMap.get(sessionId).getHost1().disconnect();
