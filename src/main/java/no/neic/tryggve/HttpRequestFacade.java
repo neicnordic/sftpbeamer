@@ -93,7 +93,6 @@ public final class HttpRequestFacade {
             Session session = routingContext.session();
             String sessionId = session.id();
 
-            logger.debug("Session id is {}", sessionId);
             SftpConnectionManager sftpSessionManager = SftpConnectionManager.getManager();
             try {
 
@@ -330,7 +329,6 @@ public final class HttpRequestFacade {
             Session session = routingContext.session();
             String sessionId = session.id();
 
-            logger.debug("Session id is {}", sessionId);
             ChannelSftp channelSftp = null;
             try {
                 channelSftp = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
@@ -424,11 +422,9 @@ public final class HttpRequestFacade {
         String sessionId = routingContext.session().id();
         logger.debug("Download file {}", path);
         logger.debug("Source is {}", source);
-        logger.debug("Session id is {}", sessionId);
 
         HttpServerResponse response = routingContext.response();
         response.setWriteQueueMaxSize(4096);
-//        response.setChunked(true);
         response.putHeader("Content-Disposition", "attachment; filename=\""
                 + path.substring(path.lastIndexOf(FileSystems.getDefault().getSeparator()) + 1) + "\"");
 
