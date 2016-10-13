@@ -123,6 +123,9 @@ $(document).ready(function () {
                 statusCode: {
                     200: function () {
                         refresh_target_host(rename_target);
+                    },
+                    302: function () {
+                        showWarningAlertInTop(rename_target, 'There is an item having the same name, please use another name.')
                     }
                 },
                 error: function (jqXHR, textStatus, errorThrown) {

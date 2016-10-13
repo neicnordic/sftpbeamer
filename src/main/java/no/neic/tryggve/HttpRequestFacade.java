@@ -207,8 +207,17 @@ public final class HttpRequestFacade {
             ChannelSftp channelSftp = null;
             try {
                 channelSftp = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
-                channelSftp.rename(StringUtils.join(path, SEPARATOR, old_name), StringUtils.join(path, SEPARATOR, new_name));
-                routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
+                String newPath = StringUtils.join(path, SEPARATOR, new_name);
+                SftpATTRS attrs = null;
+                try {
+                    attrs = channelSftp.lstat(newPath);
+                } catch (SftpException e) {}
+                if (attrs != null) {
+                    routingContext.response().setStatusCode(HttpResponseStatus.FOUND.code()).end();
+                } else {
+                    channelSftp.rename(StringUtils.join(path, SEPARATOR, old_name), newPath);
+                    routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
+                }
             } catch (SftpException | JSchException e) {
                 logger.debug("Failed to rename the file or folder {} in {}", old_name, path);
                 logger.error(e);
