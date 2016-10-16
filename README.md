@@ -12,6 +12,7 @@ are very welcome!
 1. [Functionality](#functionality)
 1. [System Overview](#overview)
 1. [Security Considerations](#security)
+1. [Development](#development)
 1. [Deployment](#deployment)
 1. [Copyright](#copyright)
 1. [License](#license)
@@ -38,9 +39,9 @@ The SFTP Beamer provides the following functions. After having connected to a se
 - Download a folder as a zip file
 
 ##System Overview <a name="overview"></a>
-From [requirements](https://github.com/neicnordic/sftpbeamer/blob/master/requirements.txt), you could find what frameworks and tools are needed.
+In a word, SFTP Beamer as a web application is a proxy linking two remote SFTP/SSH servers.
 
-The following image show how SFTP Beamer links a user with the two SFTP/SSH servers.
+The following image show how a user is using SFTP Beamer to interact with the two remote SFTP/SSH servers.
 
 ![How SFTP Beamer links a user with the two SFTP/SSH servers](http://i.imgur.com/EXBqhpZ.png)
 
@@ -51,6 +52,9 @@ Because one of purposes SFTP Beamer has is to transfer sensitive data through se
 - The SFTP Beamer never keeps the credential a user is using to connect to a SFTP/SSH server.
 - The SFTP Beamer never caches the downloaded, uploaded or transferred data. The data will only pass by the memory of server where SFTP Beamer is running. 
 - The SFTP Beamer is using session id to distinguish the different SFTP/SSH connections kept in the memory.
+
+##Development <a name="development"></a>
+The frontend of SFTP Beamer is based on JQuery, Bootstrap and several JQuery plugins, and the backend is developed by java and based on Vert.x framework. Besides, it's using Maven as a build tool. For the specific version requirement, please refer to [requirements](https://github.com/neicnordic/sftpbeamer/blob/master/requirements.txt).
 
 ##Deployment <a name="deployment"></a>
 Please refer to [deployment guideline](https://github.com/neicnordic/sftpbeamer/blob/master/DEPLOYMENT.md) for more info.
