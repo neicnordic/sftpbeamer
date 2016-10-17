@@ -1,4 +1,4 @@
-Java v8 https://www.java.com/en/
+Java v8 http://www.oracle.com/technetwork/java/javase/overview/index.html
 Maven v3+ https://maven.apache.org/
 Vert.x v3.3.3+ http://vertx.io/
 jQuery v3.0+ https://jquery.com/

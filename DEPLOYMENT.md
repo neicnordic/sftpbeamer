@@ -1,5 +1,3 @@
-Before building the code, please make sure the java and maven are installed. For the specific version, please refer to [requirements](https://github.com/neicnordic/sftpbeamer/blob/master/requirements.txt).
-
 Clone the repository:
 ```bash
 git clone https://github.com/neicnordic/sftpbeamer.git
@@ -17,12 +15,17 @@ Create the app.info.json file and edit:
 ```bash
 src/main/resources/app.info.json
 ```
+
+Before building code, install Java Development Kit and Maven first. For the specific version, please refer to [requirements](https://github.com/neicnordic/sftpbeamer/blob/master/requirements.txt).
+
 Build code:
 ```
 mvn clean package
 ```
 
-For deploying this web application, we put [nginx](https://nginx.org/) in front of it as a http proxy server, and config https. The service can be deployed in any Linux distributions, in which Java and nginx can be installed. But the testing environment we set up is based on CentOS 6.5.
+The SFTP Beamer can be deployed in any Linux distributions. But the testing environment we set up is based on CentOS 6.5.
+
+We put [nginx](https://nginx.org/) in front of the SFTP Beamer as a http proxy server, and config https. 
 
 After installing nginx, edit nginx.conf:
 ```
