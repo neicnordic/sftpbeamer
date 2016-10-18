@@ -1,15 +1,15 @@
 {
   "server": {
-    "name": "localhost",
-    "ws_port": 8081,
-    "ssl": false
+    "name": "domain name",
+    "ws_port": 443,
+    "ssl": true
   },
   "hosts": {
     "host1": "HOST1",
     "host2": "HOST2"
   },
   "loginmodes": {
-    "tsd-fx01.tsd.usit.no": "otp",
-    "mosler.bils.se": "pw"
+    "HOST1": "otp",
+    "HOST2": "pw"
   }
 }
