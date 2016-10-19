@@ -1,6 +1,10 @@
 Java v8 http://www.oracle.com/technetwork/java/javase/overview/index.html
 Maven v3+ https://maven.apache.org/
+
+#The following is a java framework for backend used by SFTP Beamer.
 Vert.x v3.3.3+ http://vertx.io/
+
+#The following libraries are used by frontend. If you just want to set up the SFTP Beamer service, you don't need to care about them, and they are already configured. If you want to further develop SFTP Beamer, you probably need to change them according to your own requirements.
 jQuery v3.0+ https://jquery.com/
 Bootstrap v3.3.0+ http://getbootstrap.com/
 DataTables plug-in for jQuery v1.10.0+ https://www.datatables.net/
