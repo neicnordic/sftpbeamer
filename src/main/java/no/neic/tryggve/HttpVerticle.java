@@ -46,8 +46,6 @@ public final class HttpVerticle extends AbstractVerticle {
 
         router.route().handler(SessionHandler.create(LocalSessionStore.create(vertx)));
 
-//        router.route("/sftp/*").handler(new HttpBodyHandler());
-
         router.route("/sftp/*").handler(BodyHandler.create());
 
         router.put(UrlPath.SFTP_UPLOAD).blockingHandler(HttpRequestFacade::chunkUploadHandler, false);
