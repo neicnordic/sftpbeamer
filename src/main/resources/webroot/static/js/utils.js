@@ -6,9 +6,13 @@ var host2_table;
 var server_info;
 
 var transfer_target;
+
+//variables for uploading files
 var upload_target;
 var uploaded_files_array;
-var progress_bar_group;
+var upload_progress_bar_group;
+var uploaded_files_number;
+var successful_uploaded_files_number;
 
 var current_ajax_request;
 
@@ -303,11 +307,14 @@ function refresh_target_host(target) {
 function uploadData(eventData) {
     var target = eventData.data['target'];
     uploaded_files_array = [];
-    progress_bar_group = {};
+    upload_progress_bar_group = {};
     upload_target = target;
+    uploaded_files_number = 0;
+    successful_uploaded_files_number = 0;
     $('#upload_progress_group').empty();
     $('#upload_modal').modal({
-        keyboard: false
+        keyboard: false,
+        backdrop: 'static'
     });
 }
 
@@ -697,6 +704,14 @@ function showWarningAlertInTop(target, text) {
     $('.' + target + '-form').after(returnInsertedAlert(text));
 }
 
+function showInfoAlertInTop(target, text) {
+    var alert = $('#' + target + '-panel .alert');
+    if (alert.length) {
+        alert.remove();
+    }
+    $('.' + target + '-form').after(returnInsertedInfoAlert(text));
+}
+
 function showErrorAlertInTop(target, text, errorThrown, extraMessage) {
     var alert = $('#' + target + '-panel .alert');
     if (alert.length) {
@@ -714,5 +729,10 @@ function showErrorAlertInTop(target, text, errorThrown, extraMessage) {
     }
 }
 function returnInsertedAlert(message) {
-    return '<div class="alert alert-danger alert-dismissible fade in error" role="alert"> <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>' + message + '</div>';
+    return '<div class="alert alert-danger alert-dismissible fade in inserted" role="alert"> <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>' + message + '</div>';
 }
+
+function returnInsertedInfoAlert(message) {
+    return '<div class="alert alert-success alert-dismissible fade in inserted" role="alert"> <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>' + message + '</div>';
+}
+

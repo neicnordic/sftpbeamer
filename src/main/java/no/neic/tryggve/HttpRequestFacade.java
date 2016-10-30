@@ -6,11 +6,13 @@ import com.jcraft.jsch.SftpATTRS;
 import com.jcraft.jsch.SftpException;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.core.streams.Pump;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.Session;
 import no.neic.tryggve.constants.HostName;
@@ -494,6 +496,51 @@ public final class HttpRequestFacade {
         }
     }
 
+    public static void chunkUploadHandler(RoutingContext routingContext) {
+        String fileName = routingContext.request().getHeader("Content-Disposition").split("filename=")[1]; //get the name of a uploaded file
+        fileName = fileName.substring(1, fileName.length() - 1).replace("%20", " "); // convert %20 to empty space
+
+
+        String source = routingContext.request().getParam(UrlParam.SOURCE);
+
+        /**
+         * This parameter represents where the data should be uploaded
+         */
+        String path = routingContext.request().getParam(UrlParam.PATH);
+        String sessionId = routingContext.session().id();
+
+        logger.debug("Upload file {} to path {}", fileName, path);
+        try {
+            ChannelSftp channelSftp = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
+            logger.debug("channelsftp is created");
+
+
+            try {
+                OutputStream ops = channelSftp.put(StringUtils.join(path, FileSystems.getDefault().getSeparator(), fileName), ChannelSftp.APPEND);
+
+                Buffer body = routingContext.getBody();
+                logger.debug("receive data of body " + body.length());
+                ops.write(body.getBytes());
+                logger.debug("data is written to ops");
+                ops.close();
+                channelSftp.disconnect();
+                logger.debug("channelSftp is closed");
+                routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
+
+            } catch (SftpException | IOException e) {
+                logger.error(e);
+                if (channelSftp.isConnected()) {
+                    channelSftp.disconnect();
+                }
+                routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
+            }
+
+        } catch (JSchException e) {
+            logger.error(e);
+            routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
+        }
+    }
+
     /**
      * This is used to handle data upload. We couldn't allow data upload through http post request. Because the data uploaded through post request will be temporarily kept
      * in the host where the sftpbeamer is running. For security reason, we want to avoid that situation.
@@ -520,33 +567,32 @@ public final class HttpRequestFacade {
 
             try {
                 OutputStream ops = channelSftp.put(StringUtils.join(path, FileSystems.getDefault().getSeparator(), fileName));
-                routingContext.request().handler(buffer -> {
-                    try {
-                        ops.write(buffer.getBytes());
-                    } catch (IOException e) {
-                        logger.error(e);
+                UploadWriteStream uploadWriteStream = new UploadWriteStream(ops, routingContext.vertx().getOrCreateContext());
+                uploadWriteStream.exceptionHandler(throwable -> {
+                    logger.error(throwable);
+                    if (ops != null) {
                         try {
                             ops.close();
-                        } catch (IOException e1) {
-                        }
-                        if (channelSftp.isConnected()) {
-                            channelSftp.disconnect();
+                        } catch (IOException e) {
                         }
                     }
                 });
-                routingContext.request().endHandler(aVoid -> {
-                    try {
-                        logger.debug("upload end handler");
-                        ops.flush();
-                        ops.close();
-                    } catch (IOException e) {
-                    }
-                    if (channelSftp.isConnected()) {
-                        channelSftp.disconnect();
-                    }
-                    routingContext.request().response().setStatusCode(HttpResponseStatus.OK.code()).end();
+                HttpServerRequest httpServerRequest = routingContext.request();
+                httpServerRequest.exceptionHandler(throwable -> {
+                    logger.error(throwable);
+                    routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
                 });
-                routingContext.request().exceptionHandler(throwable -> routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end());
+                httpServerRequest.endHandler(Void -> {
+                    uploadWriteStream.end();
+                    routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
+                    if (ops != null) {
+                        try {
+                            ops.close();
+                        } catch (IOException e) {
+                        }
+                    }
+                });
+                Pump.pump(routingContext.request(), uploadWriteStream).start();
             } catch (SftpException e) {
                 logger.error(e);
                 if (channelSftp.isConnected()) {

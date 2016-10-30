@@ -184,7 +184,7 @@ input.form-input {
     overflow: -moz-scrollbars-vertical;
 }
 
-.alert.error{
+.alert.inserted{
     border: none;
     padding-top: 10px;
     padding-bottom: 10px;

@@ -18,6 +18,7 @@ $(document).ready(function () {
 
     $('#upload-submit').click(function (event) {
         if(uploaded_files_array.length > 0) {
+            uploaded_files_number = uploaded_files_array.length;
             uploaded_files_array.pop().submit();
         }
         $(this).attr('disabled' , true);
@@ -40,37 +41,56 @@ $(document).ready(function () {
 
     upload_input.click(function () {
         var upload_progress_group = $('#upload_progress_group');
-        if (upload_progress_group.children().length != 0) {
+        if (upload_progress_group.children('div').length != 0) {
             upload_progress_group.empty();
             uploaded_files_array = [];
-            progress_bar_group = {};
+            upload_progress_bar_group = {};
+            uploaded_files_number = 0;
+            successful_uploaded_files_number = 0;
         }
     });
 
     upload_input.fileupload({
-        maxChunkSize: 10000000000,
+        maxChunkSize: 15000000,
         multipart: false,
         type: 'PUT',
+        sequentialUploads: true,
         url: '',
-        dataType: 'json',
         add: function (e, data) {
             data.url = "/sftp/upload?path=" + extractPath($("." + upload_target + "-path-link").last().attr("href")) + "&source=" + upload_target;
             var fileName = data.files[0].name;
             var upload_progress_group = $('#upload_progress_group');
-            var progress_bar_index = upload_progress_group.children().length + 1;
-            upload_progress_group.append('<div class="progress" style="margin-bottom: 10px;"> <div class="progress-bar progress-bar-info progress-bar-striped" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span style="color: black;font-size: medium;">' + fileName +'</span> </div></div>');
-            progress_bar_group[fileName] = progress_bar_index;
+            var progress_bar_index = upload_progress_group.children('div').length + 1;
+            var progress_id = "upload_progress_" + progress_bar_index;
+            upload_progress_group.append('<div id="' + progress_id + '"><p style="display: inline;">' + fileName + '</p><div class="progress" style="margin-bottom: 10px;"> <div class="progress-bar progress-bar-info progress-bar-striped" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div></div></div>');
+            upload_progress_bar_group[fileName] = progress_bar_index;
             uploaded_files_array.push(data);
         },
         progress: function (e, data) {
             var progress = parseInt(data.loaded / data.total * 100, 10);
             var fileName = data.files[0].name;
-            var progress_bar_index = progress_bar_group[fileName];
-            $('#upload_progress_group div:nth-child(' + progress_bar_index + ') .progress-bar').css(
-                'width',
-                progress + '%'
-            );
-            $('#upload_progress_group div:nth-child(' + progress_bar_index + ') .progress-bar span').text(progress + '% ' + fileName);
+            var progress_bar_index = upload_progress_bar_group[fileName];
+            var progress_id = "upload_progress_" + progress_bar_index;
+            var progress_bar = $('#' + progress_id + ' .progress-bar');
+            progress_bar.css('width', progress + '%');
+            progress_bar.text(progress + '%');
+        },
+        done : function (e, data) {
+            var fileName = data.files[0].name;
+            var progress_bar_index = upload_progress_bar_group[fileName];
+            var progress_id = "upload_progress_" + progress_bar_index;
+            $('#' + progress_id + ' p').after('&nbsp;<i class="fa fa-check" aria-hidden="true" style="color: green;"></i>');
+            successful_uploaded_files_number += 1;
+            if (successful_uploaded_files_number == uploaded_files_number) {
+                $('#upload_modal').modal('hide');
+                showInfoAlertInTop(upload_target, 'Uploading is done.')
+            }
+        },
+        fail : function (e, data) {
+            var fileName = data.files[0].name;
+            var progress_bar_index = upload_progress_bar_group[fileName];
+            var progress_id = "upload_progress_" + progress_bar_index;
+            $('#' + progress_id + ' p').after('&nbsp;<i class="fa fa-times" aria-hidden="true" style="color: red;"></i>');
         },
         always: function (e, data) {
             if(uploaded_files_array.length > 0) {

@@ -6,6 +6,7 @@ import com.jcraft.jsch.SftpException;
 import com.jcraft.jsch.SftpProgressMonitor;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -13,6 +14,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CookieHandler;
 import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.StaticHandler;
@@ -35,14 +37,20 @@ public final class HttpVerticle extends AbstractVerticle {
     @Override
     public void start() throws Exception {
 
-        HttpServer httpServer = vertx.createHttpServer();
+        HttpServerOptions httpServerOptions = new HttpServerOptions();
+        httpServerOptions.setMaxChunkSize(8192 * 4).setUsePooledBuffers(true);
+        HttpServer httpServer = vertx.createHttpServer(httpServerOptions);
         Router router = Router.router(vertx);
 
         router.route().handler(CookieHandler.create());
 
         router.route().handler(SessionHandler.create(LocalSessionStore.create(vertx)));
 
-        router.route("/sftp/*").handler(new HttpBodyHandler());
+//        router.route("/sftp/*").handler(new HttpBodyHandler());
+
+        router.route("/sftp/*").handler(BodyHandler.create());
+
+        router.put(UrlPath.SFTP_UPLOAD).blockingHandler(HttpRequestFacade::chunkUploadHandler, false);
 
         router.get(UrlPath.SFTP_INFO).produces(MediaType.APPLICATION_JSON).handler(HttpRequestFacade::fetchInfoHandler);
 
