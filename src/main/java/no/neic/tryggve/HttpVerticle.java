@@ -38,7 +38,7 @@ public final class HttpVerticle extends AbstractVerticle {
     public void start() throws Exception {
 
         HttpServerOptions httpServerOptions = new HttpServerOptions();
-        httpServerOptions.setMaxChunkSize(8192 * 4).setUsePooledBuffers(true);
+        httpServerOptions.setUsePooledBuffers(true);
         HttpServer httpServer = vertx.createHttpServer(httpServerOptions);
         Router router = Router.router(vertx);
 

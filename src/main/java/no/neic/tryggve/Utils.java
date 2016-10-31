@@ -2,8 +2,6 @@ package no.neic.tryggve;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.SftpException;
-import com.jcraft.jsch.SftpProgressMonitor;
-import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.apache.commons.lang3.StringUtils;
@@ -76,13 +74,7 @@ public final class Utils {
             item.add(entry.getFilename());
 
             if (entry.getAttrs().isDir()) {
-                try {
-                    item.add(String.valueOf(getSizeOfFolder(channelSftp, StringUtils.join(rootPath, SEPARATOR, entry.getFilename()))));
-                } catch (SftpException e) {
-                    //TODO
-                    logger.error(e);
-                    item.add(String.valueOf(entry.getAttrs().getSize()));
-                }
+                item.add(String.valueOf(entry.getAttrs().getSize()));
                 item.add("folder");
             } else {
                 item.add(String.valueOf(entry.getAttrs().getSize()));

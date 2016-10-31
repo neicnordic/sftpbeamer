@@ -24,6 +24,11 @@ function ajaxAsyncCall(settings) {
     current_ajax_request = $.ajax(settings);
 }
 
+function downloadFile(url) {
+    var iframe = document.getElementById('download_iframe');
+    iframe.src = url;
+}
+
 function createTable(name, home, content) {
     if (name == 'host1') {
         host1_table = $("#host1-table").dataTable({
@@ -54,11 +59,13 @@ function createTable(name, home, content) {
                 "render": function (data, type, full, meta) {
                     var isFoler = full[2];
                     var name = full[0];
+                    var downloadUrl;
                     if (isFoler == "folder") {
-                        return '<a target="_blank" href="/sftp/zip?path=' + home + '/' + name + '&source=host1"><i class="fa fa-download"></i></a>';
+                        downloadUrl = "/sftp/zip?path=" + home + "/" + name + "&source=host1";
                     } else {
-                        return '<a target="_blank" href="/sftp/download?path=' + home + '/' + name + '&source=host1"><i class="fa fa-download"></i></a>';
+                        downloadUrl = "/sftp/download?path=" + home + "/" + name + "&source=host1";
                     }
+                    return '<button class="download" onclick="downloadFile(\'' + downloadUrl + '\')"/><i class="fa fa-download"></i></button>';
                 },
                 "orderable": false
             }, {
@@ -98,11 +105,13 @@ function createTable(name, home, content) {
                 "render": function (data, type, full, meta) {
                     var isFoler = full[2];
                     var name = full[0];
+                    var downloadUrl;
                     if (isFoler == "folder") {
-                        return '<a target="_blank" href="/sftp/zip?path=' + home + '/' + name + '&source=host2"><i class="fa fa-download"></i></a>';
+                        downloadUrl = "/sftp/zip?path=" + home + "/" + name + "&source=host2";
                     } else {
-                        return '<a target="_blank" href="/sftp/download?path=' + home + '/' + name + '&source=host2"><i class="fa fa-download"></i></a>';
+                        downloadUrl = "/sftp/download?path=" + home + "/" + name + "&source=host2";
                     }
+                    return '<button class="download" onclick="downloadFile(\'' + downloadUrl + '\')"/><i class="fa fa-download"></i></button>';
                 }
             }, {
                 "title": "Size",
@@ -255,19 +264,21 @@ function reloadTableData(updatedData, path, source) {
             "render": function (data, type, full, meta) {
                 var isFoler = full[2];
                 var name = full[0];
+                var downloadUrl;
                 if (isFoler == "folder") {
                     if (path == "/") {
-                        return '<a target="_blank" href="/sftp/zip?path=' + path + name + '&source=' + source + '"><i class="fa fa-download"></i></a>';
+                        downloadUrl = "/sftp/zip?path=" + path  + name + "&source=" + source;
                     } else {
-                        return '<a target="_blank" href="/sftp/zip?path=' + path + '/' + name + '&source=' + source + '"><i class="fa fa-download"></i></a>';
+                        downloadUrl = "/sftp/zip?path=" + path + "/" + name + "&source=" + source;
                     }
                 } else {
                     if (path == "/") {
-                        return '<a target="_blank" href="/sftp/download?path=' + path + name + '&source=' + source + '"><i class="fa fa-download"></i></a>';
+                        downloadUrl = "/sftp/download?path=" + path  + name + "&source=" + source;
                     } else {
-                        return '<a target="_blank" href="/sftp/download?path=' + path + '/' + name + '&source=' + source + '"><i class="fa fa-download"></i></a>';
+                        downloadUrl = "/sftp/download?path=" + path + "/" + name + "&source=" + source;
                     }
                 }
+                return '<button class="download" onclick="downloadFile(\'' + downloadUrl + '\')"/><i class="fa fa-download"></i></button>';
             }
         }, {
             "title": "Size",

@@ -191,3 +191,7 @@ input.form-input {
     margin-bottom: 15px;
     font-size: medium;
 }
+.download {
+    border: none;
+    background: none;
+}

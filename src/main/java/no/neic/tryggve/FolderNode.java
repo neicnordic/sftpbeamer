@@ -29,7 +29,8 @@ public class FolderNode {
         this.folderNodeList = new ArrayList<>();
     }
 
-    private static byte[] bytes = new byte[4096];
+    private static int bufferSize = 2 * 4096;
+    private static byte[] bytes = new byte[bufferSize];
     private ZipOutputStream zipOutputStream;
     private ChannelSftp channelSftp;
     private String rootPath;
@@ -63,7 +64,11 @@ public class FolderNode {
                                 } catch (InterruptedException e) {
                                 }
                             }
-                            this.zipOutputStream.write(bytes, 0, bytesRead);
+                            if (bytesRead >= bufferSize) {
+                                this.zipOutputStream.write(bytes);
+                            } else {
+                                this.zipOutputStream.write(bytes, 0, bytesRead);
+                            }
                         }
                         this.zipOutputStream.closeEntry();
                     } finally {

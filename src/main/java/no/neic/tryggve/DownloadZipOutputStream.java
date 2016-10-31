@@ -23,8 +23,6 @@ public final class DownloadZipOutputStream extends OutputStream{
         response.write(Buffer.buffer().appendByte((byte) b));
         if (response.writeQueueFull()) {
             this.isWritable.set(false);
-            this.response.drainHandler(Void -> isWritable.set(true));
-
         }
     }
 
@@ -33,7 +31,6 @@ public final class DownloadZipOutputStream extends OutputStream{
         response.write(Buffer.buffer().appendBytes(b));
         if (response.writeQueueFull()) {
             this.isWritable.set(false);
-            this.response.drainHandler(Void -> isWritable.set(true));
         }
     }
 
@@ -42,7 +39,6 @@ public final class DownloadZipOutputStream extends OutputStream{
         response.write(Buffer.buffer().appendBytes(Arrays.copyOfRange(b, off, len)));
         if (response.writeQueueFull()) {
             this.isWritable.set(false);
-            this.response.drainHandler(Void -> isWritable.set(true));
         }
     }
 

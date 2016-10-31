@@ -2,6 +2,8 @@ package no.neic.tryggve;
 
 
 import com.jcraft.jsch.*;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -12,6 +14,7 @@ import java.util.Map;
  * This class is used to manage the sftp connection.
  */
 public final class SftpConnectionManager {
+    private static Logger logger = LoggerFactory.getLogger(SftpConnectionManager.class);
     private static final String HOST1 = "host1";
     private static final String HOST2 = "host2";
 
@@ -44,13 +47,14 @@ public final class SftpConnectionManager {
                                      String userName, String password, String hostName, int port) throws JSchException {
         JSch jSch = new JSch();
         Session session = jSch.getSession(userName, hostName, port);
-        JSch.setConfig("StrictHostKeyChecking", "no");
+        session.setConfig("StrictHostKeyChecking", "no");
         session.setUserInfo(new OneStepAuth(password));
         session.connect();
         saveSftpConnection(sessionId, source, session);
     }
 
     private ChannelSftp openSftpChannel(Session session) throws JSchException{
+        logger.debug("ChannelSftp is opened in thread " + Thread.currentThread());
         ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
         channelSftp.setBulkRequests(128);
         channelSftp.setInputStream(new ByteArrayInputStream(new byte[32768]));
