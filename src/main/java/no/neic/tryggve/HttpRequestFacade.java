@@ -20,6 +20,7 @@ import no.neic.tryggve.constants.JsonPropertyName;
 import no.neic.tryggve.constants.UrlParam;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import java.io.*;
 import java.nio.file.FileSystems;
@@ -436,10 +437,10 @@ public final class HttpRequestFacade {
             SftpATTRS attrs = channelSftp.lstat(path);
 
             HttpServerResponse response = routingContext.response();
-            response.putHeader("Content-Disposition", "attachment; filename=\""
+            response.putHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\""
                     + path.substring(path.lastIndexOf(FileSystems.getDefault().getSeparator()) + 1) + "\"");
-            response.putHeader("Content-Length", String.valueOf(attrs.getSize()));
-            response.putHeader("Content-Type", MediaType.APPLICATION_OCTET_STREAM);
+            response.putHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(attrs.getSize()));
+            response.putHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM);
             response.setWriteQueueMaxSize(bufferSize);
             response.exceptionHandler(throwable -> {
                 logger.error(throwable);
@@ -502,9 +503,9 @@ public final class HttpRequestFacade {
         HttpServerResponse response = routingContext.response();
         response.setWriteQueueMaxSize(2 * 4096);
         response.setChunked(true);
-        response.putHeader("Content-Disposition", "attachment; filename=\""
+        response.putHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\""
                 + relativePath + ".zip" + "\"");
-        response.putHeader("Content-Type", "application/zip");
+        response.putHeader(HttpHeaders.CONTENT_TYPE, "application/zip");
 
         AtomicBoolean isWritable = new AtomicBoolean(true);
         ChannelSftp channelSftp = null;
@@ -536,10 +537,9 @@ public final class HttpRequestFacade {
     }
 
     public static void chunkUploadHandler(RoutingContext routingContext) {
-        String fileName = routingContext.request().getHeader("Content-Disposition").split("filename=")[1]; //get the name of a uploaded file
+        String fileName = routingContext.request().getHeader(HttpHeaders.CONTENT_DISPOSITION).split("filename=")[1]; //get the name of a uploaded file
         fileName = fileName.substring(1, fileName.length() - 1).replace("%20", " "); // convert %20 to empty space
         String source = routingContext.request().getParam(UrlParam.SOURCE);
-
         /**
          * This parameter represents where the data should be uploaded
          */
