@@ -40,7 +40,13 @@ public final class SftpConnectionManager {
         JSch.setConfig("StrictHostKeyChecking", "no");
         session.setUserInfo(new TwoStepsAuth(password, otc));
         session.connect();
-        saveSftpConnection(sessionId, source, session);
+
+        Session sessionDownload = jSch.getSession(userName, hostName, port);
+        JSch.setConfig("StrictHostKeyChecking", "no");
+        sessionDownload.setUserInfo(new TwoStepsAuth(password, otc));
+        sessionDownload.connect();
+
+        saveSftpConnection(sessionId, source, session, sessionDownload);
     }
 
     public void createSftpConnection(String sessionId, String source,
@@ -50,16 +56,32 @@ public final class SftpConnectionManager {
         session.setConfig("StrictHostKeyChecking", "no");
         session.setUserInfo(new OneStepAuth(password));
         session.connect();
-        saveSftpConnection(sessionId, source, session);
+
+        Session sessionDownload = jSch.getSession(userName, hostName, port);
+        sessionDownload.setConfig("StrictHostKeyChecking", "no");
+        sessionDownload.setUserInfo(new OneStepAuth(password));
+        sessionDownload.connect();
+        saveSftpConnection(sessionId, source, session, sessionDownload);
     }
 
     private ChannelSftp openSftpChannel(Session session) throws JSchException{
-        logger.debug("ChannelSftp is opened in thread " + Thread.currentThread());
         ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
         channelSftp.setBulkRequests(128);
         channelSftp.setInputStream(new ByteArrayInputStream(new byte[32768]));
         channelSftp.setOutputStream(new ByteArrayOutputStream(32768));
         channelSftp.connect();
+        return channelSftp;
+    }
+
+    public ChannelSftp getDownloadConnection(String sessionId, String source) throws JSchException {
+        ChannelSftp channelSftp;
+        if (source.equals(HOST1)) {
+            channelSftp = openSftpChannel(this.sftpConnectionHolderMap.get(sessionId).getHost1Download());
+        } else if (source.equals(HOST2)) {
+            channelSftp = openSftpChannel(this.sftpConnectionHolderMap.get(sessionId).getHost2Download());
+        } else {
+            channelSftp = null;
+        }
         return channelSftp;
     }
 
@@ -78,13 +100,25 @@ public final class SftpConnectionManager {
     public void disconnectSftp(String sessionId, String source) {
 
         if (sftpConnectionHolderMap.containsKey(sessionId)) {
-            if (source.equals(HOST1) && sftpConnectionHolderMap.get(sessionId).getHost1() != null) {
-                sftpConnectionHolderMap.get(sessionId).getHost1().disconnect();
-                sftpConnectionHolderMap.get(sessionId).setHost1(null);
+            if (source.equals(HOST1)) {
+                if (sftpConnectionHolderMap.get(sessionId).getHost1() != null) {
+                    sftpConnectionHolderMap.get(sessionId).getHost1().disconnect();
+                    sftpConnectionHolderMap.get(sessionId).setHost1(null);
+                }
+                if (sftpConnectionHolderMap.get(sessionId).getHost1Download() != null) {
+                    sftpConnectionHolderMap.get(sessionId).getHost1Download().disconnect();
+                    sftpConnectionHolderMap.get(sessionId).setHost1Download(null);
+                }
             }
-            if (source.equals(HOST2) && sftpConnectionHolderMap.get(sessionId).getHost2() != null) {
-                sftpConnectionHolderMap.get(sessionId).getHost2().disconnect();
-                sftpConnectionHolderMap.get(sessionId).setHost2(null);
+            if (source.equals(HOST2)) {
+                if (sftpConnectionHolderMap.get(sessionId).getHost2() != null) {
+                    sftpConnectionHolderMap.get(sessionId).getHost2().disconnect();
+                    sftpConnectionHolderMap.get(sessionId).setHost2(null);
+                }
+                if (sftpConnectionHolderMap.get(sessionId).getHost2Download() != null) {
+                    sftpConnectionHolderMap.get(sessionId).getHost2Download().disconnect();
+                    sftpConnectionHolderMap.get(sessionId).setHost2Download(null);
+                }
             }
         }
 
@@ -95,29 +129,39 @@ public final class SftpConnectionManager {
             if (sftpConnectionHolderMap.get(sessionId).getHost1() != null) {
                 sftpConnectionHolderMap.get(sessionId).getHost1().disconnect();
             }
+            if (sftpConnectionHolderMap.get(sessionId).getHost1Download() != null) {
+                sftpConnectionHolderMap.get(sessionId).getHost1Download().disconnect();
+            }
             if (sftpConnectionHolderMap.get(sessionId).getHost2() != null) {
                 sftpConnectionHolderMap.get(sessionId).getHost2().disconnect();
+            }
+            if (sftpConnectionHolderMap.get(sessionId).getHost2Download() != null) {
+                sftpConnectionHolderMap.get(sessionId).getHost2Download().disconnect();
             }
             sftpConnectionHolderMap.remove(sessionId);
         }
 
     }
 
-    private void saveSftpConnection(String sessionId, String source, Session session) {
+    private void saveSftpConnection(String sessionId, String source, Session session, Session sessionDownload) {
         if (sftpConnectionHolderMap.containsKey(sessionId)) {
             if (source.equals(HOST1)) {
                 sftpConnectionHolderMap.get(sessionId).setHost1(session);
+                sftpConnectionHolderMap.get(sessionId).setHost1Download(sessionDownload);
             }
             if (source.equals(HOST2)) {
                 sftpConnectionHolderMap.get(sessionId).setHost2(session);
+                sftpConnectionHolderMap.get(sessionId).setHost2Download(sessionDownload);
             }
         } else {
             SftpConnectionHolder holder = new SftpConnectionHolder();
             if (source.equals(HOST1)) {
                 holder.setHost1(session);
+                holder.setHost1Download(sessionDownload);
             }
             if (source.equals(HOST2)) {
                 holder.setHost2(session);
+                holder.setHost2Download(sessionDownload);
             }
             sftpConnectionHolderMap.put(sessionId, holder);
         }
@@ -127,7 +171,10 @@ public final class SftpConnectionManager {
 
     private class SftpConnectionHolder {
         private Session host1;
+        private Session host1Download;
+
         private Session host2;
+        private Session host2Download;
 
         public Session getHost1() {
             return host1;
@@ -143,6 +190,22 @@ public final class SftpConnectionManager {
 
         public void setHost2(Session host2) {
             this.host2 = host2;
+        }
+
+        public Session getHost1Download() {
+            return host1Download;
+        }
+
+        public void setHost1Download(Session host1Download) {
+            this.host1Download = host1Download;
+        }
+
+        public Session getHost2Download() {
+            return host2Download;
+        }
+
+        public void setHost2Download(Session host2Download) {
+            this.host2Download = host2Download;
         }
     }
 

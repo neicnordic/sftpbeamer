@@ -25,8 +25,19 @@ function ajaxAsyncCall(settings) {
 }
 
 function downloadFile(url) {
-    var iframe = document.getElementById('download_iframe');
-    iframe.src = url;
+    $.ajax({
+        type: "GET",
+        url: "/sftp/download/check?" + url.substring(url.indexOf('&') + 1),
+        statusCode: {
+            200: function () {
+                var iframe = document.getElementById('download_iframe');
+                iframe.src = url;
+            },
+            406: function () {
+                showWarningAlertInTop(url.substring(url.lastIndexOf('=') + 1), "You are allowed to download a file or a folder at a time from a server.");
+            }
+        }
+    });
 }
 
 function createTable(name, home, content) {

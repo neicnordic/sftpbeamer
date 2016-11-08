@@ -18,6 +18,7 @@ import io.vertx.ext.web.Session;
 import no.neic.tryggve.constants.HostName;
 import no.neic.tryggve.constants.JsonPropertyName;
 import no.neic.tryggve.constants.UrlParam;
+import no.neic.tryggve.constants.UrlPath;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.ws.rs.core.HttpHeaders;
@@ -422,17 +423,30 @@ public final class HttpRequestFacade {
         routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
     }
 
+    public static void downloadCheckHandler(RoutingContext routingContext) {
+        String source = routingContext.request().getParam(UrlParam.SOURCE);
+        String sessionId = routingContext.session().id();
+        if (DownloadCounter.getCounter().checkIfBusy(sessionId + source)) {
+            routingContext.response().setStatusCode(HttpResponseStatus.NOT_ACCEPTABLE.code()).end();
+        } else {
+            routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
+        }
+    }
+
     public static void downloadHandler(RoutingContext routingContext) {
         String source = routingContext.request().getParam(UrlParam.SOURCE);
         String path = routingContext.request().getParam(UrlParam.PATH);
         String sessionId = routingContext.session().id();
+
+
+        DownloadCounter.getCounter().addDownloadTask(sessionId + source);
         int bufferSize = 2 * 4096;
         logger.debug("Download file {}", path);
         logger.debug("Source is {}", source);
 
         ChannelSftp channelSftp = null;
         try {
-            channelSftp = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
+            channelSftp = SftpConnectionManager.getManager().getDownloadConnection(sessionId, source);
             ChannelSftp temp = channelSftp;
             SftpATTRS attrs = channelSftp.lstat(path);
 
@@ -447,17 +461,19 @@ public final class HttpRequestFacade {
                 if (temp.isConnected()) {
                     temp.disconnect();
                 }
+                DownloadCounter.getCounter().removeDownloadTask(sessionId + source);
             }).closeHandler(Void -> {
                 if (temp.isConnected()) {
                     temp.disconnect();
                 }
+                DownloadCounter.getCounter().removeDownloadTask(sessionId + source);
             });
 
             byte[] bytes = new byte[bufferSize];
             AtomicBoolean isWritable = new AtomicBoolean(true);
             response.drainHandler(Void -> isWritable.set(true));
 
-            try (InputStream inputStream = channelSftp.get(path)) {
+            try (InputStream inputStream = new BufferedInputStream(channelSftp.get(path), 2 * bufferSize)) {
                 int size;
                 while ((size = inputStream.read(bytes)) != -1) {
                     while (!isWritable.get()) {
@@ -483,6 +499,7 @@ public final class HttpRequestFacade {
             logger.error(e);
             routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
         } finally {
+            DownloadCounter.getCounter().removeDownloadTask(sessionId + source);
             if (channelSftp != null && channelSftp.isConnected()) {
                 channelSftp.disconnect();
             }

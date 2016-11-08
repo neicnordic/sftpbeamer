@@ -70,6 +70,8 @@ public final class HttpVerticle extends AbstractVerticle {
 
         router.get(UrlPath.SFTP_ZIP).blockingHandler(HttpRequestFacade::downloadZipHandler, false);
 
+        router.get(UrlPath.SFTP_DOWNLOAD_CHECK).handler(HttpRequestFacade::downloadCheckHandler);
+
         router.route(UrlPath.SFTP_WS).handler(this::webSocketHandler);
 
         router.route().handler(StaticHandler.create());
