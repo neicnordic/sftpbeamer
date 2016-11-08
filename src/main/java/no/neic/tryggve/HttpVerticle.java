@@ -104,7 +104,7 @@ public final class HttpVerticle extends AbstractVerticle {
             String toPath = toJsonObject.getString(JsonPropertyName.PATH);
             String toName = toJsonObject.getString(JsonPropertyName.NAME);
             JsonArray filesArray = message.getJsonArray(JsonPropertyName.DATA);
-
+            
             vertx.executeBlocking(future -> {
 
                 ChannelSftp channelSftpFrom = null;

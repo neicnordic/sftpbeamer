@@ -458,7 +458,8 @@ function transferData(eventData) {
                     $('#transfer_progress').css("display", "block");
                     $('#transfer_progress_group').empty();
                     $('#transfer_modal').modal({
-                        keyboard: false
+                        keyboard: false,
+                        backdrop: 'static'
                     });
 
 
@@ -482,6 +483,7 @@ function transferData(eventData) {
 
 
                     var ws = create_ws_connection();
+                    var failed_counter = 0;
                     ws.onopen = function (event) {
                         ws.send(transferredData);
                     };
@@ -504,6 +506,7 @@ function transferData(eventData) {
                             });
                         }
                         if (message["status"] == "failed") {
+                            failed_counter += 1;
                             var progress_bar = $('.progress-bar');
                             progress_bar.css("width", '0');
                             progress_bar.text("0%");
@@ -514,6 +517,10 @@ function transferData(eventData) {
                         }
                         if (message["status"] == "finish") {
                             $('#transfer_progress').css("display", "none");
+                            if (failed_counter == 0) {
+                                $('#transfer_modal').modal('hide');
+                                showInfoAlertInTop(target, "Data transfer is finished.")
+                            }
                         }
                         if (message["status"] == "error") {
                             $('#transfer_modal').modal('hide');
