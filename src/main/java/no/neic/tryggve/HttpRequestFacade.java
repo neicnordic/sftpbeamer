@@ -6,19 +6,16 @@ import com.jcraft.jsch.SftpATTRS;
 import com.jcraft.jsch.SftpException;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import io.vertx.core.streams.Pump;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.Session;
 import no.neic.tryggve.constants.HostName;
 import no.neic.tryggve.constants.JsonPropertyName;
 import no.neic.tryggve.constants.UrlParam;
-import no.neic.tryggve.constants.UrlPath;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.ws.rs.core.HttpHeaders;
@@ -134,6 +131,49 @@ public final class HttpRequestFacade {
             } catch (SftpException e) {
                 logger.error("User {} succeeded in connecting to host {}, but failed to fetch the content of home.", userName, hostName);
                 sftpSessionManager.disconnectSftp(sessionId, source);
+                routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end(e.getMessage());
+            } finally {
+                if (channelSftp != null && channelSftp.isConnected()) {
+                    channelSftp.disconnect();
+                }
+            }
+        }
+    }
+
+    /**
+     * This method is used to check if a file is existing or not.
+     *
+     */
+    public static void checkFileHandler(RoutingContext routingContext) {
+        JsonObject requestJsonBody = routingContext.getBodyAsJson();
+        String source = requestJsonBody.getString(JsonPropertyName.SOURCE);
+        String path = requestJsonBody.getString(JsonPropertyName.PATH);
+
+        if (StringUtils.isEmpty(source) || StringUtils.isEmpty(path)) {
+            routingContext.response().setStatusCode(HttpResponseStatus.BAD_REQUEST.code()).end();
+        } else if (!source.equals(HOST1) && !source.equals(HOST2)) {
+            routingContext.response().setStatusCode(HttpResponseStatus.BAD_REQUEST.code()).end();
+        } else {
+            logger.debug("Check if file {} is existing or not.", path);
+
+            Session session = routingContext.session();
+            String sessionId = session.id();
+
+            ChannelSftp channelSftp = null;
+            try {
+                channelSftp = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
+
+                try {
+                    channelSftp.lstat(path);
+                } catch (SftpException e) {
+                    logger.debug("File {} is not existing.", path);
+                    routingContext.response().setStatusCode(HttpResponseStatus.NOT_FOUND.code()).end();
+                }
+
+                logger.debug("File {} is existing.", path);
+                routingContext.response().setStatusCode(HttpResponseStatus.FOUND.code()).end();
+            } catch (JSchException e) {
+                logger.error(e);
                 routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end(e.getMessage());
             } finally {
                 if (channelSftp != null && channelSftp.isConnected()) {

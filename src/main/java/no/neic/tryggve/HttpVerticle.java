@@ -58,6 +58,8 @@ public final class HttpVerticle extends AbstractVerticle {
 
         router.get(UrlPath.SFTP_LIST).produces(MediaType.APPLICATION_JSON).blockingHandler(HttpRequestFacade::listHandler, false);
 
+        router.post(UrlPath.SFTP_FILE_CHECK).consumes(MediaType.APPLICATION_JSON).handler(HttpRequestFacade::checkFileHandler);
+
         router.delete(UrlPath.SFTP_DELETE).consumes(MediaType.APPLICATION_JSON).blockingHandler(HttpRequestFacade::deleteHandler, false);
 
         router.delete(UrlPath.SFTP_DISCONNECT).produces(MediaType.APPLICATION_JSON).handler(HttpRequestFacade::disconnectHandler);

@@ -19,7 +19,41 @@ $(document).ready(function () {
     $('#upload-submit').click(function (event) {
         if(uploaded_files_array.length > 0) {
             uploaded_files_number = uploaded_files_array.length;
-            uploaded_files_array.pop().submit();
+            var is_existing = false;
+            for (var i = 0; i < uploaded_files_number; i++) {
+                var data = uploaded_files_array[i];
+                var fileName = data.files[0].name;
+                var url = data.url;
+                var path = url.substring(url.indexOf("=") + 1, url.indexOf("&")) + '/' + fileName;
+                var request_data = {"source": url.substring(url.lastIndexOf("=") + 1), "path": path};
+
+                $.ajax({
+                    type: "POST",
+                    url: "/sftp/file/check",
+                    data: JSON.stringify(request_data),
+                    contentType: 'application/json; charset=utf-8',
+                    async: false,
+                    statusCode: {
+                        302: function () {
+                            is_existing = true;
+                        },
+                        404: function () {
+                            is_existing = false;
+                        },
+                        500: function () {
+                            
+                        }
+                    }
+                });
+                if (is_existing) {
+                    $('#upload_modal').modal('hide');
+                    showWarningAlertInTop(upload_target, 'File ' + fileName + ' is existing, you need to rename it before uploading.');
+                    break;
+                }
+            }
+            if (!is_existing) {
+                uploaded_files_array.pop().submit();
+            }
         }
         $(this).attr('disabled' , true);
     });
