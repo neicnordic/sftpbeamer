@@ -11,5 +11,6 @@
   "loginmodes": {
     "HOST1": "otp",
     "HOST2": "pw"
-  }
+  },
+  "message": "terms of allowing usage of cookie at the bottom of browser"
 }

@@ -16,6 +16,7 @@ $(document).ready(function() {
         success: function (data) {
             host_info = data;
             server_info = host_info['server'];
+            window.cookieconsent_options = {"message":host_info['message'],"dismiss":"Accept","learnMore":"","link":null,"theme":"dark-bottom"};
         },
         async: false
     });
