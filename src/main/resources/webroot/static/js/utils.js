@@ -454,6 +454,22 @@ function transferData(eventData) {
             dataType: "json",
             contentType: 'application/json; charset=utf-8',
             statusCode: {
+                302: function (returnedData) {
+                    var information;
+                    if (returnedData['responseJSON']['file']) {
+                        information = "File " + returnedData['responseJSON']['file'];
+                    }
+                    if (returnedData['responseJSON']['folder']) {
+                        if (information) {
+                            information += " and Folder " + returnedData['responseJSON']['folder'] + " are existing, please rename them before transferring.";
+                        } else {
+                            information = "Folder " + returnedData['responseJSON']['folder'] + " is existing, please rename it before transferring.";
+                        }
+                    } else {
+                        information += " is existing, please rename it before transferring."
+                    }
+                    showWarningAlertInTop(target, information);
+                },
                 200: function (returnedData) {
                     $('#transfer_progress').css("display", "block");
                     $('#transfer_progress_group').empty();

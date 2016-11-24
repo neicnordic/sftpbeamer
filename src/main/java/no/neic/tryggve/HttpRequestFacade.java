@@ -23,6 +23,7 @@ import javax.ws.rs.core.MediaType;
 import java.io.*;
 import java.nio.file.FileSystems;
 import java.util.List;
+import java.util.Objects;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.ZipOutputStream;
@@ -307,7 +308,6 @@ public final class HttpRequestFacade {
                     if ((fileArray == null || fileArray.size() == 0) && (folderArray == null || folderArray.size() == 0)) {
                         routingContext.response().setStatusCode(HttpResponseStatus.BAD_REQUEST.code()).end();
                     } else {
-
                         Session session = routingContext.session();
                         String sessionId = session.id();
 
@@ -317,28 +317,67 @@ public final class HttpRequestFacade {
                             channelSftpFrom = SftpConnectionManager.getManager().getSftpConnection(sessionId, fromName);
                             channelSftpTo = SftpConnectionManager.getManager().getSftpConnection(sessionId, toName);
 
-                            FolderNode root = new FolderNode();
-                            root.folderName = fromPath;
 
+                            String existingFile = null;
+                            String existingFolder = null;
 
                             if (fileArray != null) {
-                                fileArray.stream().forEach(fileName -> root.fileNodeList.add(fileName.toString()));
-                            }
-
-                            if (folderArray != null) {
-                                FolderNode folderNode;
-                                for (Object folderName : folderArray) {
-                                    String path = StringUtils.join(fromPath, SEPARATOR, folderName);
-                                    folderNode = Utils.assembleFolderInfo(channelSftpFrom, path, folderName.toString());
-                                    if (folderNode != null) {
-                                        root.folderNodeList.add(folderNode);
+                                for (Object fileName : fileArray) {
+                                    try {
+                                        channelSftpTo.lstat(StringUtils.join(toPath, SEPARATOR, fileName.toString()));
+                                        existingFile = fileName.toString();
+                                        break;
+                                    } catch (SftpException e) {
                                     }
                                 }
                             }
 
-                            root.createFolder(true, channelSftpTo, toPath);
+                            if (folderArray != null) {
+                                for (Object folderName : folderArray) {
+                                    try {
+                                        channelSftpTo.lstat(StringUtils.join(toPath, SEPARATOR, folderName.toString()));
+                                        existingFolder = folderName.toString();
+                                        break;
+                                    } catch (SftpException e) {
+                                    }
+                                }
+                            }
 
-                            routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(new JsonArray(root.getRelativeFilePathArray("")).encode());
+                            if (existingFile != null || existingFolder != null) {
+                                JsonObject existingItems = new JsonObject();
+                                if (existingFile != null) {
+                                    existingItems.put(JsonPropertyName.FILE, existingFile);
+                                }
+                                if (existingFolder != null) {
+                                    existingItems.put(JsonPropertyName.FOLDER, existingFolder);
+                                }
+
+                                routingContext.response().setStatusCode(HttpResponseStatus.FOUND.code()).end(existingItems.encode());
+                            } else {
+                                FolderNode root = new FolderNode();
+                                root.folderName = fromPath;
+
+
+                                if (fileArray != null) {
+                                    fileArray.stream().forEach(fileName -> root.fileNodeList.add(fileName.toString()));
+                                }
+
+                                if (folderArray != null) {
+                                    FolderNode folderNode;
+                                    for (Object folderName : folderArray) {
+                                        String path = StringUtils.join(fromPath, SEPARATOR, folderName);
+                                        folderNode = Utils.assembleFolderInfo(channelSftpFrom, path, folderName.toString());
+                                        if (folderNode != null) {
+                                            root.folderNodeList.add(folderNode);
+                                        }
+                                    }
+                                }
+
+                                root.createFolder(true, channelSftpTo, toPath);
+
+                                routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(new JsonArray(root.getRelativeFilePathArray("")).encode());
+                            }
+
                         } catch (JSchException e) {
                             logger.error(e);
                             routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
