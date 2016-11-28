@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.ZipOutputStream;
 
 public final class HttpRequestFacade {
@@ -166,13 +167,12 @@ public final class HttpRequestFacade {
 
                 try {
                     channelSftp.lstat(path);
+                    logger.debug("File {} is existing.", path);
+                    routingContext.response().setStatusCode(HttpResponseStatus.FOUND.code()).end();
                 } catch (SftpException e) {
                     logger.debug("File {} is not existing.", path);
                     routingContext.response().setStatusCode(HttpResponseStatus.NOT_FOUND.code()).end();
                 }
-
-                logger.debug("File {} is existing.", path);
-                routingContext.response().setStatusCode(HttpResponseStatus.FOUND.code()).end();
             } catch (JSchException e) {
                 logger.error(e);
                 routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end(e.getMessage());
@@ -401,7 +401,7 @@ public final class HttpRequestFacade {
      *
      */
     public static void listHandler(RoutingContext routingContext) {
-        logger.debug("list handler is received in thread " + Thread.currentThread());
+
         String path = routingContext.request().getParam(UrlParam.PATH);
         String source = routingContext.request().getParam(UrlParam.SOURCE);
 
@@ -423,7 +423,7 @@ public final class HttpRequestFacade {
                 JsonObject responseJson = new JsonObject();
                 responseJson.put(JsonPropertyName.PATH, path).put(JsonPropertyName.DATA, new JsonArray(entryList));
 
-                logger.debug("list handler is finished in thread " + Thread.currentThread());
+
                 routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(responseJson.encode());
             } catch (SftpException | JSchException e) {
                 logger.debug("Failed to list the content of folder {}", path);
@@ -517,7 +517,6 @@ public final class HttpRequestFacade {
         String path = routingContext.request().getParam(UrlParam.PATH);
         String sessionId = routingContext.session().id();
 
-
         DownloadCounter.getCounter().addDownloadTask(sessionId + source);
         int bufferSize = 2 * 4096;
         logger.debug("Download file {}", path);
@@ -527,14 +526,23 @@ public final class HttpRequestFacade {
         try {
             channelSftp = SftpConnectionManager.getManager().getDownloadConnection(sessionId, source);
             ChannelSftp temp = channelSftp;
-            SftpATTRS attrs = channelSftp.lstat(path);
+
 
             HttpServerResponse response = routingContext.response();
+
+            AtomicLong readSize = new AtomicLong(0);
+
+            SftpATTRS attrs = channelSftp.lstat(path);
+            long fileSize = attrs.getSize();
+
             response.putHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\""
                     + path.substring(path.lastIndexOf(FileSystems.getDefault().getSeparator()) + 1) + "\"");
-            response.putHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(attrs.getSize()));
+            response.putHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileSize));
             response.putHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM);
             response.setWriteQueueMaxSize(bufferSize);
+
+            InputStream inputStream = new BufferedInputStream(channelSftp.get(path), 2 * bufferSize);
+
             response.exceptionHandler(throwable -> {
                 logger.error(throwable);
                 if (temp.isConnected()) {
@@ -542,48 +550,55 @@ public final class HttpRequestFacade {
                 }
                 DownloadCounter.getCounter().removeDownloadTask(sessionId + source);
             }).closeHandler(Void -> {
-                if (temp.isConnected()) {
-                    temp.disconnect();
+                if (readSize.get() < fileSize) {
+                    if (temp.isConnected()) {
+                        temp.disconnect();
+                    }
+                    DownloadCounter.getCounter().removeDownloadTask(sessionId + source);
                 }
-                DownloadCounter.getCounter().removeDownloadTask(sessionId + source);
             });
 
             byte[] bytes = new byte[bufferSize];
             AtomicBoolean isWritable = new AtomicBoolean(true);
             response.drainHandler(Void -> isWritable.set(true));
 
-            try (InputStream inputStream = new BufferedInputStream(channelSftp.get(path), 2 * bufferSize)) {
-                int size;
-                while ((size = inputStream.read(bytes)) != -1) {
-                    while (!isWritable.get()) {
-                        try {
-                            Thread.sleep(3);
-                        } catch (InterruptedException e) {
-                        }
-                    }
-                    if (size >= bufferSize) {
-                        response.write(Buffer.buffer().appendBytes(bytes));
-                    } else {
-                        response.write(Buffer.buffer().appendBytes(bytes, 0, size));
-                    }
+            int size;
+            while ((size = inputStream.read(bytes)) != -1) {
+                readSize.getAndAdd(size);
 
-                    if (response.writeQueueFull()) {
-                        isWritable.set(false);
+                while (!isWritable.get()) {
+                    try {
+                        Thread.sleep(1);
+                    } catch (InterruptedException e) {
                     }
                 }
-                response.end();
+                if (size >= bufferSize) {
+                    response.write(Buffer.buffer().appendBytes(bytes));
+                } else {
+                    response.write(Buffer.buffer().appendBytes(bytes, 0, size));
+                }
+
+                if (response.writeQueueFull()) {
+                    isWritable.set(false);
+                }
             }
 
-        } catch (JSchException | SftpException | IOException e) {
-            logger.error(e);
-            routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
-        } finally {
-            DownloadCounter.getCounter().removeDownloadTask(sessionId + source);
-            if (channelSftp != null && channelSftp.isConnected()) {
+            if (channelSftp.isConnected()) {
                 channelSftp.disconnect();
             }
-        }
+            DownloadCounter.getCounter().removeDownloadTask(sessionId + source);
+            response.end();
+        } catch (JSchException | SftpException | IOException e) {
 
+            logger.error(e);
+            if (!(e instanceof JSchException)) {
+                if (channelSftp.isConnected()) {
+                    channelSftp.disconnect();
+                }
+            }
+            DownloadCounter.getCounter().removeDownloadTask(sessionId + source);
+            routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
+        }
     }
 
     public static void downloadZipHandler(RoutingContext routingContext) {
