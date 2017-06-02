@@ -275,6 +275,10 @@ public final class HttpRequestFacade {
         }
     }
 
+    public static void asyncTransferHandler(RoutingContext routingContext) {
+
+    }
+
     /**
      * This method is used to do some preparation before starting to transfer data between two remote hosts.
      * The request body looks like {"from": {"name": "", "path": "", "data": {"file": [], "folder": []}}, "to": {"name": "", "path": ""}}.
