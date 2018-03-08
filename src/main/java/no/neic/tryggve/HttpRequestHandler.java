@@ -7,6 +7,7 @@ import com.jcraft.jsch.SftpException;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
@@ -23,6 +24,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import java.io.*;
 import java.nio.file.FileSystems;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Vector;
@@ -75,8 +77,7 @@ public final class HttpRequestHandler {
      */
     static void loginHandler(RoutingContext routingContext) {
 
-        if (validateRequestBody(routingContext, JsonKey.USERNAME, JsonKey.PASSWORD, JsonKey.HOSTNAME, JsonKey.PORT, JsonKey.SOURCE)) {
-
+        validateRequestBody(routingContext, () -> {
             JsonObject requestJsonBody = routingContext.getBodyAsJson();
             String userName = requestJsonBody.getString(JsonKey.USERNAME);
             String otc = requestJsonBody.getString(JsonKey.OTC);
@@ -85,7 +86,7 @@ public final class HttpRequestHandler {
             String port = requestJsonBody.getString(JsonKey.PORT);
             String source = requestJsonBody.getString(JsonKey.SOURCE);
 
-            if (validateSpecificConstraint(routingContext, () -> (source.equals(HOST1) || source.equals(HOST2)) && StringUtils.isNumeric(port))) {
+            validateSpecificConstraint(routingContext, () -> (source.equals(HOST1) || source.equals(HOST2)) && StringUtils.isNumeric(port), () -> {
                 logger.debug("User {} connects to host {} in port {} through source {}", userName, hostName, port, source);
 
                 ChannelSftp channelSftp = null;
@@ -135,8 +136,8 @@ public final class HttpRequestHandler {
                         channelSftp.disconnect();
                     }
                 }
-            }
-        }
+            });
+        }, JsonKey.USERNAME, JsonKey.PASSWORD, JsonKey.HOSTNAME, JsonKey.PORT, JsonKey.SOURCE);
     }
 
     /**
@@ -145,15 +146,15 @@ public final class HttpRequestHandler {
      */
     static void checkFileHandler(RoutingContext routingContext) {
 
-        if (validateRequestBody(routingContext, JsonKey.SOURCE, JsonKey.PATH)) {
+        validateRequestBody(routingContext, () -> {
             JsonObject requestJsonBody = routingContext.getBodyAsJson();
             String source = requestJsonBody.getString(JsonKey.SOURCE);
             String path = requestJsonBody.getString(JsonKey.PATH);
 
-            if (validateSpecificConstraint(routingContext, () -> source.equals(HOST1) || source.equals(HOST2))) {
+            validateSpecificConstraint(routingContext, () -> source.equals(HOST1) || source.equals(HOST2), () -> {
                 logger.debug("Check if file {} is existing or not.", path);
 
-                returnResponseFunction(routingContext, source, channelSftp -> {
+                returnResponseFunction(routingContext, channelSftp -> {
                     try {
                         channelSftp.lstat(path);
                         logger.debug("File {} is existing.", path);
@@ -163,8 +164,9 @@ public final class HttpRequestHandler {
                         return Pair.of(HttpResponseStatus.NOT_FOUND, Optional.empty());
                     }
                 });
-            }
-        }
+            });
+
+        }, JsonKey.SOURCE, JsonKey.PATH);
     }
 
     /**
@@ -173,15 +175,15 @@ public final class HttpRequestHandler {
      *
      */
     static void createFolderHandler(RoutingContext routingContext) {
-        if (validateRequestBody(routingContext, JsonKey.SOURCE, JsonKey.PATH)) {
+        validateRequestBody(routingContext, () -> {
             JsonObject requestJsonBody = routingContext.getBodyAsJson();
             String source = requestJsonBody.getString(JsonKey.SOURCE);
             String path = requestJsonBody.getString(JsonKey.PATH);
 
-            if (validateSpecificConstraint(routingContext, () -> source.equals(HOST1) || source.equals(HOST2))) {
+            validateSpecificConstraint(routingContext, () -> source.equals(HOST1) || source.equals(HOST2), () -> {
                 logger.debug("Source {} wants to create a new folder {}.", source, path);
 
-                returnResponseFunction(routingContext, source, channelSftp -> {
+                returnResponseFunction(routingContext, channelSftp -> {
                     try {
                         channelSftp.mkdir(path);
                     } catch (SftpException e) {
@@ -190,8 +192,8 @@ public final class HttpRequestHandler {
                     logger.debug("Folder {} is created.", path);
                     return Pair.of(HttpResponseStatus.CREATED, Optional.empty());
                 });
-            }
-        }
+            });
+        }, JsonKey.SOURCE, JsonKey.PATH);
     }
 
     /**
@@ -201,18 +203,17 @@ public final class HttpRequestHandler {
      *
      */
     static void renameHandler(RoutingContext routingContext) {
-
-        if (validateRequestBody(routingContext, JsonKey.SOURCE, JsonKey.PATH, JsonKey.OLD_NAME, JsonKey.NEW_NAME)) {
+        validateRequestBody(routingContext, () -> {
             JsonObject requestJsonBody = routingContext.getBodyAsJson();
             String source = requestJsonBody.getString(JsonKey.SOURCE);
             String path = requestJsonBody.getString(JsonKey.PATH);
             String old_name = requestJsonBody.getString(JsonKey.OLD_NAME);
             String new_name = requestJsonBody.getString(JsonKey.NEW_NAME);
 
-            if (validateSpecificConstraint(routingContext, () -> source.equals(HOST1) || source.equals(HOST2))) {
+            validateSpecificConstraint(routingContext, () -> source.equals(HOST1) || source.equals(HOST2), () -> {
                 logger.debug("Source {} renames the file or folder {} under {} to {}", source, old_name, path, new_name);
 
-                returnResponseFunction(routingContext, source, channelSftp -> {
+                returnResponseFunction(routingContext, channelSftp -> {
                     String newPath = StringUtils.join(path, SEPARATOR, new_name);
                     SftpATTRS attrs = null;
                     try {
@@ -224,8 +225,8 @@ public final class HttpRequestHandler {
                     logger.debug("Succeed to rename the file or folder {} in {}", old_name, path);
                     return Pair.of(HttpResponseStatus.NO_CONTENT, Optional.empty());
                 });
-            }
-        }
+            });
+        }, JsonKey.SOURCE, JsonKey.PATH, JsonKey.OLD_NAME, JsonKey.NEW_NAME);
     }
 
     /**
@@ -358,20 +359,18 @@ public final class HttpRequestHandler {
         String path = routingContext.request().getParam(UrlParam.PATH);
         String source = routingContext.request().getParam(UrlParam.SOURCE);
 
-        boolean bool = validateSpecificConstraint(routingContext, () ->
-            !StringUtils.isEmpty(path) && !StringUtils.isEmpty(source) && (source.equals(HOST1) || source.equals(HOST2)));
-
-        if (bool) {
+        validateSpecificConstraint(routingContext, () ->
+                !StringUtils.isEmpty(path) && !StringUtils.isEmpty(source) && (source.equals(HOST1) || source.equals(HOST2)), () -> {
             logger.debug("List the content of folder {}", path);
 
-            returnResponseFunction(routingContext, source, channelSftp -> {
+            returnResponseFunction(routingContext, channelSftp -> {
                 Vector<ChannelSftp.LsEntry> entryVector = channelSftp.ls(path);
                 List<List<String>> entryList = Utils.assembleFolderContent(entryVector, channelSftp, path);
                 JsonObject responseJson = new JsonObject();
                 responseJson.put(JsonKey.PATH, path).put(JsonKey.DATA, new JsonArray(entryList));
                 return Pair.of(HttpResponseStatus.OK, Optional.of(responseJson.encode()));
             });
-        }
+        });
     }
 
     /**
@@ -379,37 +378,35 @@ public final class HttpRequestHandler {
      *
      */
     static void deleteHandler(RoutingContext routingContext) {
-
-        if (validateRequestBody(routingContext, JsonKey.PATH, JsonKey.SOURCE)) {
+        validateRequestBody(routingContext, () -> {
             JsonObject requestJsonBody = routingContext.getBodyAsJson();
             String path = requestJsonBody.getString(JsonKey.PATH);
             String source = requestJsonBody.getString(JsonKey.SOURCE);
             JsonArray data = requestJsonBody.getJsonArray(JsonKey.DATA);
 
-            boolean bool = validateSpecificConstraint(routingContext, () ->
-                (source.equals(HOST1) || source.equals(HOST2)) && (data != null) && (data.size() != 0));
+            validateSpecificConstraint(routingContext,
+                    () -> (source.equals(HOST1) || source.equals(HOST2)) && (data != null) && (data.size() != 0), () -> {
+                        logger.debug("Delete the data of {}", path);
 
-            if (bool) {
-                logger.debug("Delete the data of {}", path);
+                        returnResponseFunction(routingContext, channelSftp -> {
+                            JsonObject item;
+                            for (Object object : data) {
+                                item = (JsonObject) object;
+                                String str = StringUtils.join(path, SEPARATOR, item.getString(JsonKey.NAME));
+                                if (item.getString(JsonKey.TYPE).equals(JsonKey.FILE)) {
+                                    logger.debug("Deleting a file {}", str);
+                                    channelSftp.rm(str);
+                                } else {
+                                    logger.debug("Deleting a folder {}", str);
+                                    Utils.deleteFolder(str, channelSftp);
+                                }
+                            }
+                            logger.debug("Succeed to delete the data of {}", path);
+                            return Pair.of(HttpResponseStatus.NO_CONTENT, Optional.empty());
+                        });
+                    });
 
-                returnResponseFunction(routingContext, source, channelSftp -> {
-                    JsonObject item;
-                    for (Object object : data) {
-                        item = (JsonObject) object;
-                        String str = StringUtils.join(path, SEPARATOR, item.getString(JsonKey.NAME));
-                        if (item.getString(JsonKey.TYPE).equals(JsonKey.FILE)) {
-                            logger.debug("Deleting a file {}", str);
-                            channelSftp.rm(str);
-                        } else {
-                            logger.debug("Deleting a folder {}", str);
-                            Utils.deleteFolder(str, channelSftp);
-                        }
-                    }
-                    logger.debug("Succeed to delete the data of {}", path);
-                    return Pair.of(HttpResponseStatus.NO_CONTENT, Optional.empty());
-                });
-            }
-        }
+        }, JsonKey.PATH, JsonKey.SOURCE);
     }
 
     /**
@@ -614,9 +611,12 @@ public final class HttpRequestHandler {
         }
     }
 
-    private static void returnResponseFunction(RoutingContext routingContext, String source, CheckedFunction<ChannelSftp, Pair<HttpResponseStatus, Optional<String>>> function) {
+    private static void returnResponseFunction(
+            RoutingContext routingContext,
+            CheckedFunction<ChannelSftp, Pair<HttpResponseStatus, Optional<String>>> function) {
         Session session = routingContext.session();
         String sessionId = session.id();
+        String source = routingContext.request().getParam(JsonKey.SOURCE) != null ? routingContext.request().getParam(JsonKey.SOURCE) : routingContext.getBodyAsJson().getString(JsonKey.SOURCE);
 
 
 
@@ -643,28 +643,24 @@ public final class HttpRequestHandler {
         }
     }
 
-    private static boolean validateRequestBody(RoutingContext routingContext, String... params) {
+    private static void validateRequestBody(RoutingContext routingContext, Runnable runnable, String... params) {
         JsonObject body = routingContext.getBodyAsJson();
         if (body == null || body.size() == 0) {
             routingContext.response().setStatusCode(HttpResponseStatus.BAD_REQUEST.code()).end();
-            return false;
         } else {
-            for (String param : params) {
-                if (StringUtils.isEmpty(body.getString(param))) {
-                    routingContext.response().setStatusCode(HttpResponseStatus.BAD_REQUEST.code()).end();
-                    return false;
-                }
+            if (Arrays.stream(params).allMatch((param) -> body.containsKey(param))) {
+                runnable.run();
+            } else {
+                routingContext.response().setStatusCode(HttpResponseStatus.BAD_REQUEST.code()).end();
             }
-            return true;
         }
     }
 
-    private static boolean validateSpecificConstraint(RoutingContext routingContext, Supplier<Boolean> validator) {
+    private static void validateSpecificConstraint(RoutingContext routingContext, Supplier<Boolean> validator, Runnable runnable) {
         if (validator.get()) {
-            return true;
+            runnable.run();
         } else {
             routingContext.response().setStatusCode(HttpResponseStatus.BAD_REQUEST.code()).end();
-            return false;
         }
     }
 
