@@ -3,7 +3,7 @@ package no.neic.tryggve;
 import com.jcraft.jsch.SftpProgressMonitor;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.json.JsonObject;
-import no.neic.tryggve.constants.JsonPropertyName;
+import no.neic.tryggve.constants.JsonKey;
 import no.neic.tryggve.constants.TransferStatus;
 
 public final class ProgressMonitor implements SftpProgressMonitor {
@@ -26,10 +26,10 @@ public final class ProgressMonitor implements SftpProgressMonitor {
     public boolean count(long transferredData) {
         this.transferredSize += transferredData;
         JsonObject jsonObject = new JsonObject();
-        jsonObject.put(JsonPropertyName.STATUS, TransferStatus.TRANSFERRING);
-        jsonObject.put(JsonPropertyName.TRANSFERRED_BYTES, transferredSize);
-        jsonObject.put(JsonPropertyName.TOTAL_BYTES, fileSize);
-        jsonObject.put(JsonPropertyName.FILE_NAME, this.fileName);
+        jsonObject.put(JsonKey.STATUS, TransferStatus.TRANSFERRING);
+        jsonObject.put(JsonKey.TRANSFERRED_BYTES, transferredSize);
+        jsonObject.put(JsonKey.TOTAL_BYTES, fileSize);
+        jsonObject.put(JsonKey.FILE_NAME, this.fileName);
         serverWebSocket.writeFinalTextFrame(jsonObject.encode());
         return true;
     }
@@ -38,8 +38,8 @@ public final class ProgressMonitor implements SftpProgressMonitor {
     public void end() {
         transferredSize = 0;
         JsonObject jsonObject = new JsonObject();
-        jsonObject.put(JsonPropertyName.STATUS, TransferStatus.DONE);
-        jsonObject.put(JsonPropertyName.FILE, fileName);
+        jsonObject.put(JsonKey.STATUS, TransferStatus.DONE);
+        jsonObject.put(JsonKey.FILE, fileName);
         serverWebSocket.writeFinalTextFrame(jsonObject.encode());
     }
 }
