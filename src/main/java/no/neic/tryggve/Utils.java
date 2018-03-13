@@ -1,20 +1,44 @@
 package no.neic.tryggve;
 
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.SftpException;
+import com.jcraft.jsch.*;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.file.FileSystems;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Vector;
 
 public final class Utils {
     private static Logger logger = LoggerFactory.getLogger(Utils.class);
 
     private static String SEPARATOR = FileSystems.getDefault().getSeparator();
+
+    public static Session createSftpSession(String userName, String password, String hostName, int port, Optional<String> otc) throws JSchException{
+        JSch jSch = new JSch();
+        Session session = jSch.getSession(userName, hostName, port);
+        session.setConfig("StrictHostKeyChecking", "no");
+        if (otc.isPresent()) {
+            session.setUserInfo(new TwoStepsAuth(password, otc.get()));
+        } else {
+            session.setUserInfo(new OneStepAuth(password));
+        }
+        session.connect();
+        return session;
+    }
+
+    public static ChannelSftp openSftpChannel(Session session) throws JSchException{
+        ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
+        channelSftp.setBulkRequests(128);
+        channelSftp.setInputStream(new ByteArrayInputStream(new byte[32768]));
+        channelSftp.setOutputStream(new ByteArrayOutputStream(32768));
+        channelSftp.connect();
+        return channelSftp;
+    }
 
     public static FolderNode assembleFolderInfo(ChannelSftp channelSftp, String absolutePath, String folderName) {
         FolderNode folderNode = new FolderNode();

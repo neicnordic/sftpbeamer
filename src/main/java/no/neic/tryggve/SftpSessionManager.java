@@ -9,32 +9,33 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * This class is used to manage the sftp connection.
  */
-public final class SftpConnectionManager {
-    private static Logger logger = LoggerFactory.getLogger(SftpConnectionManager.class);
+public final class SftpSessionManager {
+    private static Logger logger = LoggerFactory.getLogger(SftpSessionManager.class);
     private static final String HOST1 = "host1";
     private static final String HOST2 = "host2";
 
-    private static SftpConnectionManager instance = new SftpConnectionManager();
+    private static SftpSessionManager instance = new SftpSessionManager();
 
-    public static SftpConnectionManager getManager() {
+    public static SftpSessionManager getManager() {
         return instance;
     }
 
     /**
      * The sftpConnectionHolderMap is used to keep the sftp connections of a user. The key is the session id.
      */
-    private Map<String, SftpConnectionHolder> sftpConnectionHolderMap;
+    private Map<String, SftpSessionHolder> sftpConnectionHolderMap;
 
-    private SftpConnectionManager() {
+    private SftpSessionManager() {
         sftpConnectionHolderMap = new HashMap<>();
     }
 
-    public void createSftpConnection(String sessionId, String source,
-                                     String userName, String password, String otc, String hostName, int port) throws JSchException {
+    public void createSftpSession(String sessionId, String source,
+                                  String userName, String password, String otc, String hostName, int port) throws JSchException {
         JSch jSch = new JSch();
         Session session = jSch.getSession(userName, hostName, port);
         JSch.setConfig("StrictHostKeyChecking", "no");
@@ -46,34 +47,23 @@ public final class SftpConnectionManager {
         sessionDownload.setUserInfo(new TwoStepsAuth(password, otc));
         sessionDownload.connect();
 
-        saveSftpConnection(sessionId, source, session, sessionDownload);
+        saveSftpSession(sessionId, source,
+                Utils.createSftpSession(userName, password, hostName, port, Optional.of(otc)),
+                Utils.createSftpSession(userName, password, hostName, port, Optional.of(otc)));
     }
 
-    public void createSftpConnection(String sessionId, String source,
-                                     String userName, String password, String hostName, int port) throws JSchException {
-        JSch jSch = new JSch();
-        Session session = jSch.getSession(userName, hostName, port);
-        session.setConfig("StrictHostKeyChecking", "no");
-        session.setUserInfo(new OneStepAuth(password));
-        session.connect();
-
-        Session sessionDownload = jSch.getSession(userName, hostName, port);
-        sessionDownload.setConfig("StrictHostKeyChecking", "no");
-        sessionDownload.setUserInfo(new OneStepAuth(password));
-        sessionDownload.connect();
-        saveSftpConnection(sessionId, source, session, sessionDownload);
+    public void createSftpSession(String sessionId, String source,
+                                  String userName, String password, String hostName, int port) throws JSchException {
+        saveSftpSession(sessionId, source,
+                Utils.createSftpSession(userName, password, hostName, port, Optional.empty()),
+                Utils.createSftpSession(userName, password, hostName, port, Optional.empty()));
     }
 
     private ChannelSftp openSftpChannel(Session session) throws JSchException{
-        ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
-        channelSftp.setBulkRequests(128);
-        channelSftp.setInputStream(new ByteArrayInputStream(new byte[32768]));
-        channelSftp.setOutputStream(new ByteArrayOutputStream(32768));
-        channelSftp.connect();
-        return channelSftp;
+        return Utils.openSftpChannel(session);
     }
 
-    public ChannelSftp getDownloadConnection(String sessionId, String source) throws JSchException {
+    public ChannelSftp getDownloadChannel(String sessionId, String source) throws JSchException {
         ChannelSftp channelSftp;
         if (source.equals(HOST1)) {
             channelSftp = openSftpChannel(this.sftpConnectionHolderMap.get(sessionId).getHost1Download());
@@ -85,7 +75,7 @@ public final class SftpConnectionManager {
         return channelSftp;
     }
 
-    public ChannelSftp getSftpConnection(String sessionId, String source) throws JSchException{
+    public ChannelSftp getSftpChannel(String sessionId, String source) throws JSchException{
         ChannelSftp channelSftp;
         if (source.equals(HOST1)) {
             channelSftp = openSftpChannel(this.sftpConnectionHolderMap.get(sessionId).getHost1());
@@ -143,7 +133,7 @@ public final class SftpConnectionManager {
 
     }
 
-    private void saveSftpConnection(String sessionId, String source, Session session, Session sessionDownload) {
+    private void saveSftpSession(String sessionId, String source, Session session, Session sessionDownload) {
         if (sftpConnectionHolderMap.containsKey(sessionId)) {
             if (source.equals(HOST1)) {
                 sftpConnectionHolderMap.get(sessionId).setHost1(session);
@@ -154,7 +144,7 @@ public final class SftpConnectionManager {
                 sftpConnectionHolderMap.get(sessionId).setHost2Download(sessionDownload);
             }
         } else {
-            SftpConnectionHolder holder = new SftpConnectionHolder();
+            SftpSessionHolder holder = new SftpSessionHolder();
             if (source.equals(HOST1)) {
                 holder.setHost1(session);
                 holder.setHost1Download(sessionDownload);
@@ -169,7 +159,7 @@ public final class SftpConnectionManager {
 
 
 
-    private class SftpConnectionHolder {
+    private class SftpSessionHolder {
         private Session host1;
         private Session host1Download;
 
@@ -209,90 +199,4 @@ public final class SftpConnectionManager {
         }
     }
 
-    private class OneStepAuth implements UserInfo {
-        private String password;
-
-        public OneStepAuth(String password) {
-            this.password = password;
-        }
-
-        @Override
-        public String getPassphrase() {
-            return null;
-        }
-
-        @Override
-        public String getPassword() {
-            return this.password;
-        }
-
-        @Override
-        public boolean promptPassword(String s) {
-            return true;
-        }
-
-        @Override
-        public boolean promptPassphrase(String s) {
-            return false;
-        }
-
-        @Override
-        public boolean promptYesNo(String s) {
-            return false;
-        }
-
-        @Override
-        public void showMessage(String s) {
-
-        }
-    }
-
-    private class TwoStepsAuth implements UserInfo, UIKeyboardInteractive {
-        private String password;
-        private String otc;
-
-        public TwoStepsAuth(String password, String otc) {
-            this.password = password;
-            this.otc = otc;
-        }
-
-        @Override
-        public String[] promptKeyboardInteractive(String destination, String name,
-                                                  String instruction, String[] prompt, boolean[] echo) {
-            if (prompt[0].contains("Password")) {
-                return new String[]{password};
-            } else {
-                return new String[]{otc};
-            }
-        }
-
-        @Override
-        public String getPassphrase() {
-            return null;
-        }
-
-        @Override
-        public String getPassword() {
-            return null;
-        }
-
-        @Override
-        public boolean promptPassword(String s) {
-            return false;
-        }
-
-        @Override
-        public boolean promptPassphrase(String s) {
-            return false;
-        }
-
-        @Override
-        public boolean promptYesNo(String s) {
-            return false;
-        }
-
-        @Override
-        public void showMessage(String s) {
-        }
-    }
 }

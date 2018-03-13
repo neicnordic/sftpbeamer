@@ -56,7 +56,7 @@ public final class HttpVerticle extends AbstractVerticle {
 
         router.post(UrlPath.SFTP_TRANSFER_PREPARE).consumes(MediaType.APPLICATION_JSON).produces(MediaType.APPLICATION_JSON).handler(HttpRequestHandler::transferPrepareHandler);
 
-        router.post(UrlPath.SFTP_TRANSFER_ASYNC).consumes(MediaType.APPLICATION_JSON).handler(HttpRequestHandler::asyncTransferHandler);
+        router.post(UrlPath.SFTP_TRANSFER_ASYNC).consumes(MediaType.APPLICATION_JSON).blockingHandler(HttpRequestHandler::asyncTransferHandler, false);
 
         router.get(UrlPath.SFTP_LIST).produces(MediaType.APPLICATION_JSON).blockingHandler(HttpRequestHandler::listHandler, false);
 
@@ -114,8 +114,8 @@ public final class HttpVerticle extends AbstractVerticle {
                 ChannelSftp channelSftpFrom = null;
                 ChannelSftp channelSftpTo = null;
                 try {
-                    channelSftpFrom = SftpConnectionManager.getManager().getSftpConnection(sessionId, fromName);
-                    channelSftpTo = SftpConnectionManager.getManager().getSftpConnection(sessionId, toName);
+                    channelSftpFrom = SftpSessionManager.getManager().getSftpChannel(sessionId, fromName);
+                    channelSftpTo = SftpSessionManager.getManager().getSftpChannel(sessionId, toName);
 
                     if (channelSftpFrom == null || channelSftpTo == null) {
                         throw new JSchException();

@@ -7,7 +7,6 @@ import com.jcraft.jsch.SftpException;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
@@ -94,17 +93,17 @@ public final class HttpRequestHandler {
                 Session session = routingContext.session();
                 String sessionId = session.id();
 
-                SftpConnectionManager sftpSessionManager = SftpConnectionManager.getManager();
+                SftpSessionManager sftpSessionManager = SftpSessionManager.getManager();
                 try {
 
                     logger.debug("User {} is Connecting to host {}", userName, hostName);
                     if (otc.isEmpty()) {
-                        sftpSessionManager.createSftpConnection(sessionId, source, userName, password, hostName, Integer.parseInt(port));
+                        sftpSessionManager.createSftpSession(sessionId, source, userName, password, hostName, Integer.parseInt(port));
                     } else {
-                        sftpSessionManager.createSftpConnection(sessionId, source, userName, password, otc, hostName, Integer.parseInt(port));
+                        sftpSessionManager.createSftpSession(sessionId, source, userName, password, otc, hostName, Integer.parseInt(port));
                     }
                     logger.debug("User {} is Connected to host, try to open a channel", userName);
-                    channelSftp = sftpSessionManager.getSftpConnection(sessionId, source);
+                    channelSftp = sftpSessionManager.getSftpChannel(sessionId, source);
 
                     logger.debug("The channel is opened");
                     String homePath;
@@ -229,8 +228,10 @@ public final class HttpRequestHandler {
         }, JsonKey.SOURCE, JsonKey.PATH, JsonKey.OLD_NAME, JsonKey.NEW_NAME);
     }
 
-    public static void asyncTransferHandler(RoutingContext routingContext) {
-
+    static void asyncTransferHandler(RoutingContext routingContext) {
+        validateRequestBody(routingContext, () -> {
+            
+        }, JsonKey.FROM, JsonKey.TO, JsonKey.DATA, JsonKey.EMAIL);
     }
 
     /**
@@ -272,8 +273,8 @@ public final class HttpRequestHandler {
                         ChannelSftp channelSftpFrom = null;
                         ChannelSftp channelSftpTo = null;
                         try {
-                            channelSftpFrom = SftpConnectionManager.getManager().getSftpConnection(sessionId, fromName);
-                            channelSftpTo = SftpConnectionManager.getManager().getSftpConnection(sessionId, toName);
+                            channelSftpFrom = SftpSessionManager.getManager().getSftpChannel(sessionId, fromName);
+                            channelSftpTo = SftpSessionManager.getManager().getSftpChannel(sessionId, toName);
 
 
                             String existingFile = null;
@@ -422,9 +423,9 @@ public final class HttpRequestHandler {
         Session session = routingContext.session();
         String sessionId = session.id();
         if (source == null || source.isEmpty()) {
-            SftpConnectionManager.getManager().disconnectSftp(sessionId);
+            SftpSessionManager.getManager().disconnectSftp(sessionId);
         } else {
-            SftpConnectionManager.getManager().disconnectSftp(sessionId, source);
+            SftpSessionManager.getManager().disconnectSftp(sessionId, source);
         }
 
         routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
@@ -452,7 +453,7 @@ public final class HttpRequestHandler {
 
         ChannelSftp channelSftp = null;
         try {
-            channelSftp = SftpConnectionManager.getManager().getDownloadConnection(sessionId, source);
+            channelSftp = SftpSessionManager.getManager().getDownloadChannel(sessionId, source);
             ChannelSftp temp = channelSftp;
 
 
@@ -549,7 +550,7 @@ public final class HttpRequestHandler {
         AtomicBoolean isWritable = new AtomicBoolean(true);
         ChannelSftp channelSftp = null;
         try (ZipOutputStream zipOutputStream = new ZipOutputStream(new DownloadZipOutputStream(response, isWritable))) {
-            channelSftp = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
+            channelSftp = SftpSessionManager.getManager().getSftpChannel(sessionId, source);
 
             ChannelSftp temp = channelSftp;
             response.closeHandler(Void -> {
@@ -587,7 +588,7 @@ public final class HttpRequestHandler {
 
         logger.debug("Upload file {} to path {}", fileName, path);
         try {
-            ChannelSftp channelSftp = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
+            ChannelSftp channelSftp = SftpSessionManager.getManager().getSftpChannel(sessionId, source);
 
 
             try {
@@ -626,7 +627,7 @@ public final class HttpRequestHandler {
 
         ChannelSftp channelSftp = null;
         try {
-            channelSftp = SftpConnectionManager.getManager().getSftpConnection(sessionId, source);
+            channelSftp = SftpSessionManager.getManager().getSftpChannel(sessionId, source);
             Pair<HttpResponseStatus, Optional<String>> pair = function.apply(channelSftp);
 
             if (pair.getRight().isPresent()) {
