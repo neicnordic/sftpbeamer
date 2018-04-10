@@ -24,4 +24,6 @@ public final class JsonKey {
     public static final String NAME = "name";
     public static final String TYPE = "type";
     public static final String EMAIL = "email";
+    public static final String SUCCESS = "success";
+    public static final String FAILED = "failed";
 }

@@ -136,10 +136,6 @@ $(document).ready(function () {
     $('#upload_modal').on('hide.bs.modal', function () {
         refresh_target_host(upload_target);
     });
-
-    $('#transfer_modal').on('hide.bs.modal', function () {
-        refresh_target_host(transfer_target);
-    });
     
     $('#folder_create').click(function (event) {
         event.preventDefault();
@@ -175,7 +171,7 @@ $(document).ready(function () {
                 data: JSON.stringify(request_data),
                 contentType: 'application/json; charset=utf-8',
                 statusCode: {
-                    200: function () {
+                    204: function () {
                         refresh_target_host(rename_target);
                     },
                     302: function () {

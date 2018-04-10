@@ -164,21 +164,6 @@ function create_ws_connection() {
     return new WebSocket(endpoint);
 }
 
-function refresh_progress_bar(message) {
-    var transfer_progress_bar = $('.progress-bar');
-    var transferred_bytes = Number(message["transferred_bytes"]);
-    var total_bytes = Number(message["total_bytes"]);
-    var file_name = message["file_name"];
-    if (transferred_bytes == total_bytes) {
-        transfer_progress_bar.css("width", '100%');
-        transfer_progress_bar.text("100%");
-    } else {
-        var percentage = Math.round(transferred_bytes / total_bytes * 100);
-        transfer_progress_bar.css("width", percentage + '%');
-        transfer_progress_bar.text(percentage + '%');
-    }
-}
-
 function fetch_table(source) {
     if (source == 'host1') {
         return host1_table;
@@ -471,80 +456,60 @@ function transferData(eventData) {
                     showWarningAlertInTop(target, information);
                 },
                 200: function (returnedData) {
-                    $('#transfer_progress').css("display", "block");
-                    $('#transfer_progress_group').empty();
+                    if (target == "host1") {
+                        $('#password-for-origin').text($('#host1-hostname').val());
+                        $('#password-for-dest').text($('#host2-hostname').val());
+                    } else if (target == "host2") {
+                        $('#password-for-origin').text($('#host2-hostname').val());
+                        $('#password-for-dest').text($('#host1-hostname').val());
+                    }
+
                     $('#transfer_modal').modal({
                         keyboard: false,
                         backdrop: 'static'
                     });
 
+                    $('#confirm-transfer-btn').click(function(event){
+                        event.preventDefault();
+                        if (target == "host1") {
+                            transfer_target = "host2";
 
-                    if (target == "host1") {
-                        transfer_target = "host2";
-
-                        transferredData = JSON.stringify({
-                            "from": {"path": from_path, "name": "host1"},
-                            "to": {"path": to_path, "name": "host2"},
-                            "data": returnedData
-                        });
-                    } else if (target == "host2") {
-                        transfer_target = "host1";
-
-                        transferredData = JSON.stringify({
-                            "from": {"path": from_path, "name": "host2"},
-                            "to": {"path": to_path, "name": "host1"},
-                            "data": returnedData
-                        })
-                    }
-
-
-                    var ws = create_ws_connection();
-                    var failed_counter = 0;
-                    ws.onopen = function (event) {
-                        ws.send(transferredData);
-                    };
-                    ws.onmessage = function (event) {
-                        var message = JSON.parse(event.data);
-                        if (message["status"] == "start") {
-                            $('.progress-bar').text("0%");
-                            $('#transferred-file-name').text(message["file"])
-                        }
-                        if (message["status"] == "transferring") {
-                            refresh_progress_bar(message);
-                        }
-                        if (message["status"] == "done") {
-                            var progress_bar = $('.progress-bar');
-                            progress_bar.css("width", '0');
-                            progress_bar.text("0%");
-                            $("#transfer_progress_group").append('<p>' + message["file"] + '&nbsp; <i class="fa fa-check" aria-hidden="true" style="color: green;"></i></p>');
-                            $('[data-spy="scroll"]').each(function () {
-                                $(this).scrollspy('refresh')
+                            transferredData = JSON.stringify({
+                                "from": {"path": from_path, "hostname": $('#host1-hostname').val(), "port": parseInt($('#host1-port').val()), "username": $('#host1-username').val(), "password": $('#password-for-origin-input').val()},
+                                "to": {"path": to_path, "hostname": $('#host2-hostname').val(), "port": parseInt($('#host2-port').val()), "username": $('#host2-username').val(), "password": $('#password-for-dest-input').val()},
+                                "data": returnedData,
+                                "email": $('#notification-email').val()
                             });
+                        } else if (target == "host2") {
+                            transfer_target = "host1";
+
+                            transferredData = JSON.stringify({
+                                "from": {"path": from_path, "hostname": $('#host2-hostname').val(), "port": parseInt($('#host2-port').val()), "username": $('#host2-username').val(), "password": $('#password-for-origin-input').val()},
+                                "to": {"path": to_path, "hostname": $('#host1-hostname').val(), "port": parseInt($('#host1-port').val()), "username": $('#host1-username').val(), "password": $('#password-for-dest-input').val()},
+                                "data": returnedData,
+                                "email": $('#notification-email').val()
+                            })
                         }
-                        if (message["status"] == "failed") {
-                            failed_counter += 1;
-                            var progress_bar = $('.progress-bar');
-                            progress_bar.css("width", '0');
-                            progress_bar.text("0%");
-                            $("#transfer_progress_group").append('<p>' + message["file"] + '&nbsp; <i class="fa fa-times" aria-hidden="true" style="color: red;"></i></p>');
-                            $('[data-spy="scroll"]').each(function () {
-                                $(this).scrollspy('refresh')
-                            });
-                        }
-                        if (message["status"] == "finish") {
-                            $('#transfer_progress').css("display", "none");
-                            if (failed_counter == 0) {
-                                $('#transfer_modal').modal('hide');
-                                showInfoAlertInTop(target, "Data transfer is finished.")
+
+                        ajaxAsyncCall({
+                            type: "POST",
+                            url: "/sftp/transfer/async",
+                            data: transferredData,
+                            dataType: "json",
+                            contentType: 'application/json; charset=utf-8',
+                            statusCode: {
+                                201: function () {
+                                    $('#transfer_modal').modal('hide');
+                                    showInfoAlertInTop(target, "The task of data transfer is submitted.");
+                                }
+                            },
+                            error: function (jqXhR, textStatus, errorThrown) {
+                                if (!(errorThrown && errorThrown == "abort")) {
+                                    showErrorAlertInTop(target, jqXhR.responseText, errorThrown, "Can't transfer data.");
+                                }
                             }
-                        }
-                        if (message["status"] == "error") {
-                            $('#transfer_modal').modal('hide');
-                            showErrorAlertInTop(target, message["message"], "", "Can't transfer data.");
-                        }
-                    };
-                    ws.onclose = function () {
-                    };
+                        });
+                    });
                 }
             },
             error: function (jqXhR, textStatus, errorThrown) {

@@ -22,8 +22,8 @@ $(document).ready(function() {
     });
 
     // Populate the hostname inputs with values from config file
-    $('#host1-hostname').val(host_info.hosts['host1']);
-    $('#host2-hostname').val(host_info.hosts['host2']);
+    // $('#host1-hostname').val(host_info.hosts['host1']);
+    // $('#host2-hostname').val(host_info.hosts['host2']);
 
     // Define button click action
     $('.btn-connect').click(function(event) {
@@ -46,7 +46,7 @@ $(document).ready(function() {
         }
         $('#credential_modal').modal({
             keyboard: false,
-            backdrop: true
+            backdrop: 'static'
         });
         $('#credential_modal').on('shown.bs.modal', function () {
             $('#password').focus();
@@ -96,6 +96,7 @@ $(document).ready(function() {
             dataType: "json",
             contentType: 'application/json; charset=utf-8'
         });
+        $('#credential_modal').modal('hide');
         enable_waiting_box("Connecting");
     });
 });

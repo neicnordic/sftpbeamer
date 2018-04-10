@@ -7,17 +7,20 @@ import com.jcraft.jsch.SftpException;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.Session;
-import no.neic.tryggve.constants.HostName;
-import no.neic.tryggve.constants.JsonKey;
-import no.neic.tryggve.constants.UrlParam;
+import no.neic.tryggve.constants.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.mail.DefaultAuthenticator;
+import org.apache.commons.mail.Email;
+import org.apache.commons.mail.EmailException;
+import org.apache.commons.mail.SimpleEmail;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -228,9 +231,133 @@ public final class HttpRequestHandler {
         }, JsonKey.SOURCE, JsonKey.PATH, JsonKey.OLD_NAME, JsonKey.NEW_NAME);
     }
 
+    /**
+     * This method is used to receive a request of transfer data from one host to the other one in an asynchronous way. After data transfer is done, an email will be sent.
+     * The request body looks like {"from": {"hostname": "", "port": 22, "username": "", "password":"", "otc": "", "path": ""},
+     * "to": {"hostname": "", "port": 22, "username": "", "password":"", "otc": "", "path": ""}, "data": [], "email": "xxx@xxx.xx"}
+     */
     static void asyncTransferHandler(RoutingContext routingContext) {
+
         validateRequestBody(routingContext, () -> {
-            
+
+            routingContext.vertx().<JsonObject>executeBlocking(future -> {
+                JsonObject result = new JsonObject();
+                JsonObject requestBody = routingContext.getBodyAsJson();
+
+                JsonObject from = requestBody.getJsonObject(JsonKey.FROM);
+                String fromHost = from.getString(JsonKey.HOSTNAME);
+                int fromPort = from.getInteger(JsonKey.PORT);
+                String fromUserName = from.getString(JsonKey.USERNAME);
+                String fromPassword = from.getString(JsonKey.PASSWORD);
+                String fromOtc = from.getString(JsonKey.OTC);
+                String fromPath = from.getString(JsonKey.PATH);
+                com.jcraft.jsch.Session fromSession = null;
+                com.jcraft.jsch.Session toSession = null;
+                try {
+                    fromSession = Utils.createSftpSession(fromUserName, fromPassword, fromHost, fromPort, StringUtils.isEmpty(fromOtc) ? Optional.empty() : Optional.of(fromOtc));
+                    ChannelSftp fromChannel = Utils.openSftpChannel(fromSession);
+
+                    JsonObject to = requestBody.getJsonObject(JsonKey.TO);
+                    String toHost = to.getString(JsonKey.HOSTNAME);
+                    int toPort = to.getInteger(JsonKey.PORT);
+                    String toUserName = to.getString(JsonKey.USERNAME);
+                    String toPassword = to.getString(JsonKey.PASSWORD);
+                    String toOtc = to.getString(JsonKey.OTC);
+                    String toPath = to.getString(JsonKey.PATH);
+                    try {
+                        toSession = Utils.createSftpSession(toUserName, toPassword, toHost, toPort, StringUtils.isEmpty(toOtc) ? Optional.empty() : Optional.of(toOtc));
+                        ChannelSftp toChannel = Utils.openSftpChannel(toSession);
+
+
+                        JsonArray filesArray = requestBody.getJsonArray(JsonKey.DATA);
+
+                        JsonArray successArray = new JsonArray();
+                        JsonArray failedArray = new JsonArray();
+
+                        for (Object object : filesArray) {
+                            String fromFile = StringUtils.join(fromPath, FileSystems.getDefault().getSeparator(), object.toString());
+                            String toFile = StringUtils.join(toPath, FileSystems.getDefault().getSeparator(), object.toString());
+                            try {
+                                fromChannel.get(fromFile, toChannel.put(toFile));
+                                successArray.add(fromFile);
+                            } catch (SftpException e) {
+                                logger.error("Failed to transfer file {}", e.getCause(), fromFile);
+                                failedArray.add(fromFile);
+                            }
+                        }
+                        result.put(JsonKey.FROM, fromHost).put(JsonKey.TO, toHost).put(JsonKey.SUCCESS, successArray).put(JsonKey.FAILED, failedArray).put(JsonKey.STATUS, "success").put(JsonKey.EMAIL, requestBody.getString(JsonKey.EMAIL));
+                        future.complete(result);
+                    } catch (JSchException e) {
+                        logger.error("User " + toUserName + " can't login host " + toHost, e.getCause());
+                        result.put(JsonKey.MESSAGE, "connecting with " + toHost + " failed");
+                        result.put(JsonKey.FROM, fromHost);
+                        result.put(JsonKey.DATA, requestBody.getJsonArray(JsonKey.DATA));
+                        result.put(JsonKey.STATUS, "failed");
+                        result.put(JsonKey.EMAIL, requestBody.getString(JsonKey.EMAIL));
+                        future.complete(result);
+                    }
+                } catch (JSchException e) {
+                    logger.error("User " + fromUserName + " can't login host " + fromHost, e.getCause());
+                    result.put(JsonKey.MESSAGE, "connecting with " + fromHost + " failed");
+                    result.put(JsonKey.FROM, fromHost);
+                    result.put(JsonKey.DATA, requestBody.getJsonArray(JsonKey.DATA));
+                    result.put(JsonKey.EMAIL, requestBody.getString(JsonKey.EMAIL));
+                    result.put(JsonKey.STATUS, "failed");
+                    future.complete(result);
+                } finally {
+                    if (fromSession != null && fromSession.isConnected()) {
+                        fromSession.disconnect();
+                    }
+                    if (toSession != null && toSession.isConnected()) {
+                        toSession.disconnect();
+                    }
+                }
+            }, false, asyncResult -> {
+                if (asyncResult.succeeded()) {
+                    routingContext.vertx().executeBlocking(future -> {
+                        JsonObject result = asyncResult.result();
+                        try {
+                            Email email = new SimpleEmail();
+                            email.setHostName(Config.valueOf(ConfigName.SMTP_HOST));
+                            email.setAuthenticator(new DefaultAuthenticator(Config.valueOf(ConfigName.SMTP_USER_NAME), Config.valueOf(ConfigName.SMTP_PASSWORD)));
+                            if (Boolean.valueOf(Config.valueOf(ConfigName.SMTP_SSL))) {
+                                email.setSSLOnConnect(true);
+                                email.setStartTLSEnabled(true);
+                                email.setStartTLSRequired(true);
+                                email.setSslSmtpPort(Config.valueOf(ConfigName.SMTP_PORT));
+                            } else {
+                                email.setSmtpPort(Integer.valueOf(Config.valueOf(ConfigName.SMTP_PORT)));
+                            }
+                            email.setFrom(Config.valueOf(ConfigName.FROM_EMAIL));
+                            email.addTo(result.getString(JsonKey.EMAIL));
+
+                            if (result.getString(JsonKey.STATUS).equals("success")) {
+                                email.setSubject("Data transfer is done");
+                                String message = "";
+                                if (result.getJsonArray(JsonKey.FAILED) != null && result.getJsonArray(JsonKey.FAILED).size() != 0) {
+                                    message = "The following files " + StringUtils.join(result.getJsonArray(JsonKey.FAILED).getList(), ",") + " failed to be transferred from " + result.getString(JsonKey.FROM) + " to " + result.getString(JsonKey.TO) + ".";
+                                }
+                                if (result.getJsonArray(JsonKey.SUCCESS) != null && result.getJsonArray(JsonKey.SUCCESS).size() != 0) {
+                                    message = message + " The following files " + StringUtils.join(result.getJsonArray(JsonKey.SUCCESS).getList(), ",") + " succeeded to be transferred from " + result.getString(JsonKey.FROM) + " to " + result.getString(JsonKey.TO) + ".";
+                                }
+                                email.setMsg(message);
+                            }
+                            if (result.getString(JsonKey.STATUS).equals("failed")) {
+                                email.setSubject("Data transfer failed");
+                                String message = "The following files " + StringUtils.join(result.getJsonArray(JsonKey.DATA), ",") + " failed to transfer, because " + result.getString(JsonKey.MESSAGE) + ".";
+                                email.setMsg(message);
+                            }
+                            email.send();
+                            logger.debug("Have sent email to {}", result.getString(JsonKey.EMAIL));
+                        } catch (EmailException e) {
+                            logger.error("Sending email to " + result.getString(JsonKey.EMAIL) + " failed.", e.getCause());
+                        }
+                    }, false, asyncResult1 -> {});
+                }
+            });
+
+            routingContext.response().setStatusCode(HttpResponseStatus.CREATED.code()).end();
+
         }, JsonKey.FROM, JsonKey.TO, JsonKey.DATA, JsonKey.EMAIL);
     }
 
