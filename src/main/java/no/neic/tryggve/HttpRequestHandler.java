@@ -91,7 +91,6 @@ public final class HttpRequestHandler {
             validateSpecificConstraint(routingContext, () -> (source.equals(HOST1) || source.equals(HOST2)) && StringUtils.isNumeric(port), () -> {
                 logger.debug("User {} connects to host {} in port {} through source {}", userName, hostName, port, source);
 
-                ChannelSftp channelSftp = null;
 
                 Session session = routingContext.session();
                 String sessionId = session.id();
@@ -105,38 +104,12 @@ public final class HttpRequestHandler {
                     } else {
                         sftpSessionManager.createSftpSession(sessionId, source, userName, password, otc, hostName, Integer.parseInt(port));
                     }
-                    logger.debug("User {} is Connected to host, try to open a channel", userName);
-                    channelSftp = sftpSessionManager.getSftpChannel(sessionId, source);
 
-                    logger.debug("The channel is opened");
-                    String homePath;
-                    if (hostName.equals(HostName.TSD)) {
-                        homePath = SEPARATOR + userName.split("-")[0];
-                    } else if (hostName.equals(HostName.MOSLER)) {
-                        homePath = SEPARATOR;
-                    } else {
-                        homePath = channelSftp.getHome();
-                    }
-
-                    logger.debug("Fetching the content at home {}", homePath);
-                    Vector<ChannelSftp.LsEntry> entryVector = channelSftp.ls(homePath);
-                    List<List<String>> entryList = Utils.assembleFolderContent(entryVector, channelSftp, homePath);
-                    JsonObject responseJson = new JsonObject();
-                    responseJson.put(JsonKey.DATA, new JsonArray(entryList));
-                    responseJson.put(JsonKey.HOME, homePath);
                     logger.debug("User {} connects to host {} successfully", userName, hostName);
-                    routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(responseJson.encode());
+                    routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
                 } catch (JSchException e) {
                     logger.error("User {} failed to connect to host {}, because error {} happens.", userName, hostName, e.getMessage());
                     routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end(e.getMessage());
-                } catch (SftpException e) {
-                    logger.error("User {} succeeded in connecting to host {}, but failed to fetch the content of home.", userName, hostName);
-                    sftpSessionManager.disconnectSftp(sessionId, source);
-                    routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end(e.getMessage());
-                } finally {
-                    if (channelSftp != null && channelSftp.isConnected()) {
-                        channelSftp.disconnect();
-                    }
                 }
             });
         }, JsonKey.USERNAME, JsonKey.PASSWORD, JsonKey.HOSTNAME, JsonKey.PORT, JsonKey.SOURCE);

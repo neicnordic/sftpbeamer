@@ -40,97 +40,12 @@ function downloadFile(url) {
     });
 }
 
-function createTable(name, home, content) {
-    if (name == 'host1') {
-        host1_table = $("#host1-table").dataTable({
-            "pagingType": "simple",
-            "dom": "tlp",
-            "language": {
-                "paginate": {
-                    "previous": "&laquo;",
-                    "next": "&raquo;"
-                }
-            },
-            "info": false,
-            "searching": false,
-            "lengthMenu": [[10, 25, 40, -1], [10, 25, 40, "All"]],
-            "data": content,
-            "columns": [{
-                "title": "Name",
-                "render": function (data, type, full, meta) {
-                    var isFoler = full[2];
-                    if (isFoler == "folder") {
-                        return '<i class="fa fa-folder-o"></i> <a class="host1-folder-link" href="/sftp/list?path=' + home + '/' + data + '&source=host1"> ' + data + '</a>';
-                    } else {
-                        return '<i class="fa fa-file-o"></i> ' + data;
-                    }
-                }
-            }, {
-                "title": "",
-                "render": function (data, type, full, meta) {
-                    var isFoler = full[2];
-                    var name = full[0];
-                    var downloadUrl;
-                    if (isFoler == "folder") {
-                        downloadUrl = "/sftp/zip?path=" + home + "/" + name + "&source=host1";
-                    } else {
-                        downloadUrl = "/sftp/download?path=" + home + "/" + name + "&source=host1";
-                    }
-                    return '<button class="download" onclick="downloadFile(\'' + downloadUrl + '\')"/><i class="fa fa-download"></i></button>';
-                },
-                "orderable": false
-            }, {
-                "title": "Size",
-                "render": function (data, type, full, meta) {
-                    return convertBytes(full[1]);
-                }
-            }]
-        });
-    } else if (name == 'host2') {
-        host2_table = $("#host2-table").dataTable({
-            "pagingType": "simple",
-            "dom": "tlp",
-            "language": {
-                "paginate": {
-                    "next": "&gt;",
-                    "previous": "&lt;"
-                }
-            },
-            "info": false,
-            "searching": false,
-            "lengthMenu": [[10, 25, 40, -1], [10, 25, 40, "All"]],
-            "data": content,
-            "columns": [{
-                "title": "Name",
-                "render": function (data, type, full, meta) {
-                    var isFolder = full[2];
-                    if (isFolder == "folder") {
-                        return '<i class="fa fa-folder-o"></i> <a class="host2-folder-link" href="/sftp/list?path=' + home + '/' + data + '&source=host2"> ' + data + '</a>';
-                    } else {
-                        return '<i class="fa fa-file-o"></i> ' + data;
-                    }
-                }
-            }, {
-                "orderable": false,
-                "title": "",
-                "render": function (data, type, full, meta) {
-                    var isFoler = full[2];
-                    var name = full[0];
-                    var downloadUrl;
-                    if (isFoler == "folder") {
-                        downloadUrl = "/sftp/zip?path=" + home + "/" + name + "&source=host2";
-                    } else {
-                        downloadUrl = "/sftp/download?path=" + home + "/" + name + "&source=host2";
-                    }
-                    return '<button class="download" onclick="downloadFile(\'' + downloadUrl + '\')"/><i class="fa fa-download"></i></button>';
-                }
-            }, {
-                "title": "Size",
-                "render": function (data, type, full, meta) {
-                    return convertBytes(full[1]);
-                }
-            }]
-        });
+function createTable(content, path, source) {
+    var settings = getTableSettings(content, source, path);
+    if (source == 'host1') {
+        host1_table = $("#host1-table").dataTable(settings);
+    } else if (source == 'host2') {
+        host2_table = $("#host2-table").dataTable(settings);
     }
 }
 
@@ -146,22 +61,6 @@ function disable_waiting_box() {
     $('#gray-screen').css({'display': 'none'});
     $('#waiting-box').css({'display': 'none'});
     $('body').css({'overflow':'auto'});
-}
-
-function create_ws_connection() {
-    // This is for local testing
-    var endpoint
-    if (server_info['ssl']) {
-        endpoint = 'wss://' + server_info['name'] + ':' + server_info['ws_port'] + '/sftp/ws';
-    } else {
-        endpoint = 'ws://' + server_info['name'] + ':' + server_info['ws_port'] + '/sftp/ws';
-    }
-    // This is for testing server without ssl
-    // var endpoint = 'ws://tryggve.cbu.uib.no:80/websocket';
-    //This is for testing server with ssl
-    //var endpoint = 'wss://tryggve.cbu.uib.no:443/websocket';
-
-    return new WebSocket(endpoint);
 }
 
 function fetch_table(source) {
@@ -223,11 +122,8 @@ function logout() {
     });
 }
 
-function reloadTableData(updatedData, path, source) {
-    fetch_table(source).api().destroy();
-    $("#" + source + "-table").empty();
-    $("#" + source + "-table-div").html('<table id="' + source + '-table" class="table table-striped"></table>');
-    var settings = {
+function getTableSettings(content, source, path) {
+    return {
         "pagingType": "simple",
         "dom": "tlp",
         "language": {
@@ -239,7 +135,7 @@ function reloadTableData(updatedData, path, source) {
         "info": false,
         "searching": false,
         "lengthMenu": [[10, 25, 40, -1], [10, 25, 40, "All"]],
-        "data": updatedData,
+        "data": content,
         "columns": [{
             "title": "Name",
             "render": function (data, type, full, meta) {
@@ -263,13 +159,13 @@ function reloadTableData(updatedData, path, source) {
                 var downloadUrl;
                 if (isFoler == "folder") {
                     if (path == "/") {
-                        downloadUrl = "/sftp/zip?path=" + path  + name + "&source=" + source;
+                        downloadUrl = "/sftp/zip?path=" + path + name + "&source=" + source;
                     } else {
                         downloadUrl = "/sftp/zip?path=" + path + "/" + name + "&source=" + source;
                     }
                 } else {
                     if (path == "/") {
-                        downloadUrl = "/sftp/download?path=" + path  + name + "&source=" + source;
+                        downloadUrl = "/sftp/download?path=" + path + name + "&source=" + source;
                     } else {
                         downloadUrl = "/sftp/download?path=" + path + "/" + name + "&source=" + source;
                     }
@@ -283,6 +179,13 @@ function reloadTableData(updatedData, path, source) {
             }
         }]
     };
+}
+
+function reloadTableData(content, path, source) {
+    fetch_table(source).api().destroy();
+    $("#" + source + "-table").empty();
+    $("#" + source + "-table-div").html('<table id="' + source + '-table" class="table table-striped"></table>');
+    var settings = getTableSettings(content, source, path);
     set_table(source, $("#" + source + "-table").dataTable(settings));
 }
 
@@ -463,6 +366,12 @@ function transferData(eventData) {
                         $('#password-for-origin').text($('#host2-hostname').val());
                         $('#password-for-dest').text($('#host1-hostname').val());
                     }
+
+                    $('#password-for-origin-input').val('');
+
+                    $('#password-for-dest-input').val('');
+
+                    $('#notification-email').val('');
 
                     $('#transfer_modal').modal({
                         keyboard: false,

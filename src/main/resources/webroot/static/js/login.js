@@ -76,24 +76,36 @@ $(document).ready(function() {
             url: "/sftp/login",
             data: JSON.stringify(requestData),
             statusCode: {
-                200: function (returnedData) {
-                    disable_waiting_box();
-
-                    $("#" + target + "-path").append('<a class="' + target + '-path-link" href="/sftp/list?path=' + returnedData["home"] + '&source=' + target + '">&laquo;Home&raquo;/</a>');
-                    $("#" + target + "-table-div").html('<table id="' + target + '-table" class="table table-striped"></table>');
-                    createTable(target, returnedData["home"], returnedData["data"]);
-                    $("#" + target + "-disconnect-btn").css("display", "inline-block");
-                    $("#" + target + "-submit-btn").css("display", "none");
-                    $("#" + target + "-username").prop("disabled", true);
-                    $("#" + target + "-hostname").prop("disabled", true);
-                    $("#" + target + "-port").prop("disabled", true);
+                200: function () {
+                    ajaxAsyncCall({
+                        type: "GET",
+                        url: "/sftp/list?path=/&source=" + target,
+                        dataType: "json",
+                        statusCode: {
+                            200: function (returnedData) {
+                                disable_waiting_box();
+                                $("#" + target + "-path").append('<a class="' + target + '-path-link" href="/sftp/list?path=' + returnedData["path"] + '&source=' + target + '">' + returnedData["path"] +'</a>');
+                                $("#" + target + "-table-div").html('<table id="' + target + '-table" class="table table-striped"></table>');
+                                createTable(returnedData["data"], returnedData["path"], target);
+                                $("#" + target + "-disconnect-btn").css("display", "inline-block");
+                                $("#" + target + "-submit-btn").css("display", "none");
+                                $("#" + target + "-username").prop("disabled", true);
+                                $("#" + target + "-hostname").prop("disabled", true);
+                                $("#" + target + "-port").prop("disabled", true);
+                            }
+                        },
+                        error: function (jqXhR, textStatus, errorThrown) {
+                            if (!(errorThrown && errorThrown == "abort")) {
+                                showErrorAlertInTop(target, '', '', "Can't list the content.");
+                            }
+                        }
+                    });
                 }
             },
             error: function (jqXhR, textStatus, errorThrown) {
                 disable_waiting_box();
                 showErrorAlertInTop(target, jqXhR.responseText, errorThrown, 'Login failed.')
             },
-            dataType: "json",
             contentType: 'application/json; charset=utf-8'
         });
         $('#credential_modal').modal('hide');
