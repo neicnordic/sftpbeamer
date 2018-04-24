@@ -1,41 +1,28 @@
 package no.neic.tryggve;
 
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.SftpException;
-import com.jcraft.jsch.SftpProgressMonitor;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
-import io.vertx.core.http.ServerWebSocket;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CookieHandler;
 import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.sstore.LocalSessionStore;
 import no.neic.tryggve.constants.ConfigName;
-import no.neic.tryggve.constants.JsonKey;
-import no.neic.tryggve.constants.TransferStatus;
 import no.neic.tryggve.constants.UrlPath;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.ws.rs.core.MediaType;
-import java.nio.file.FileSystems;
 
 public final class HttpVerticle extends AbstractVerticle {
 
-    private static final String TRANSFER_LOCALMAP_NAME = "transfer";
     private static Logger logger = LoggerFactory.getLogger(HttpVerticle.class);
 
 
     @Override
-    public void start() throws Exception {
+    public void start() {
 
         HttpServerOptions httpServerOptions = new HttpServerOptions();
         httpServerOptions.setUsePooledBuffers(true);

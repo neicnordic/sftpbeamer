@@ -32,6 +32,7 @@ The SFTP Beamer provides the following functions. After having connected to a se
 - Navigate the directory hierarchy
 - Upload multiple local files to SFTP/SSH server
 - Transfer multiple files/folders between two SFTP/SSH servers
+- Send email notification when data transfer is done
 - Delete multiple files/folders 
 - Rename a file or folder
 - Create a folder
