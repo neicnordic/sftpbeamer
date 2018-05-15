@@ -1,4 +1,5 @@
-#SFTP Beamer
+# SFTP Beamer
+
 SFTP Beamer is an open source web application, which is able to facilitate users
 to manipulate files between two SFTP/SSH servers.
 
@@ -18,12 +19,13 @@ are very welcome!
 1. [License](#license)
 1. [Contributors](#contributors)
 
-##Introduction <a name="introduction"></a>
+## Introduction <a name="introduction"></a>
 The SFTP Beamer is initially motivated by the [Tryggve](https://wiki.neic.no/wiki/Tryggve) project. One of missions Tryggve project has is to help users easily use the existing services at the different Nordic countries. In Norway and Sweden, both of them have their own secure service for sensitive data. The built-in approach of importing/exporting data to/from the service is primitive and needs much manual labour, especially when manipulating data between the two services. In order to simplify this kind of task and make it user friendly, the SFTP Beamer comes out. But SFTP Beamer is not only designed to adapt for the secure services in Norway and Sweden, but also for a general server, which allows SFTP/SSH connection.
 
 There is a running SFTP Beamer application at https://tryggve.cbu.uib.no. Welcome to try it.
 
-##Functionality <a name="functionality"></a>
+## Functionality <a name="functionality"></a>
+
 The SFTP Beamer provides the following functions. After having connected to a server, right-click on the content area to show a functionality menu. For transfer, delete and rename functions, you have to left-click to select item(s) first. Besides, you are allowed to download a file or a folder as a zip file.
 
 ![Functionality menu](http://i.imgur.com/nhbVjSq.png)
@@ -39,7 +41,8 @@ The SFTP Beamer provides the following functions. After having connected to a se
 - Download a file
 - Download a folder as a zip file
 
-##System Overview <a name="overview"></a>
+## System Overview <a name="overview"></a>
+
 In a word, SFTP Beamer as a web application is a proxy linking two remote SFTP/SSH servers.
 
 The following image show how a user is using SFTP Beamer to interact with the two remote SFTP/SSH servers.
@@ -54,19 +57,24 @@ Because one of purposes SFTP Beamer has is to transfer sensitive data through se
 - The SFTP Beamer never caches the downloaded, uploaded or transferred data. The data will only pass by the memory of server where SFTP Beamer is running. 
 - The SFTP Beamer is using session id to distinguish the different SFTP/SSH connections kept in the memory.
 
-##Development <a name="development"></a>
+## Development <a name="development"></a>
+
 The frontend of SFTP Beamer is based on JQuery, Bootstrap and several JQuery plugins, and the backend is developed by java and based on Vert.x framework. Besides, it's using Maven as a build tool. For the specific version requirement, please refer to [requirements](https://github.com/neicnordic/sftpbeamer/blob/master/requirements.txt).
 
-##Deployment <a name="deployment"></a>
+## Deployment <a name="deployment"></a>
+
 Please refer to [deployment guideline](https://github.com/neicnordic/sftpbeamer/blob/master/DEPLOYMENT.md) for more info.
 
-##Copyright <a name="copyright"></a>
+## Copyright <a name="copyright"></a>
+
 [Nordic e-Infrastructures Collaboration (NeIC)](http://neic.nordforsk.org)
 
-##License <a name="license"></a>
+## License <a name="license"></a>
+
 MIT (see the [LICENSE file](https://github.com/neicnordic/sftpbeamer/blob/master/LICENSE) for more info)
 
-##Contributors <a name="contributors"></a>
+## Contributors <a name="contributors"></a>
+
 - [Xiaxi Li](http://github.com/xiaxi-li)
 - [Johan Viklund](http://github.com/viklund)
 - [Samuel Lampa](http://github.com/samuell)
