@@ -12,5 +12,6 @@
     "HOST1": "otp",
     "HOST2": "pw"
   },
+  "otp_hosts": ["HOST1"],
   "message": "terms of allowing usage of cookie at the bottom of browser"
 }

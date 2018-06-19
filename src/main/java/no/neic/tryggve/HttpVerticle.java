@@ -41,6 +41,8 @@ public final class HttpVerticle extends AbstractVerticle {
 
         router.post(UrlPath.SFTP_LOGIN).consumes(MediaType.APPLICATION_JSON).produces(MediaType.APPLICATION_JSON).blockingHandler(HttpRequestHandler::loginHandler, false);
 
+        router.post(UrlPath.SFTP_CONNECT).consumes(MediaType.APPLICATION_JSON).blockingHandler(HttpRequestHandler::connectHandler, false);
+
         router.post(UrlPath.SFTP_TRANSFER_PREPARE).consumes(MediaType.APPLICATION_JSON).produces(MediaType.APPLICATION_JSON).handler(HttpRequestHandler::transferPrepareHandler);
 
         router.post(UrlPath.SFTP_TRANSFER_ASYNC).consumes(MediaType.APPLICATION_JSON).handler(HttpRequestHandler::asyncTransferHandler);

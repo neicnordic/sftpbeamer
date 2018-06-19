@@ -13,4 +13,6 @@ public final class ConfigName {
     public static final String FROM_EMAIL = "from_email";
     public static final String SMTP_USER_NAME = "smtp_user_name";
     public static final String SMTP_PASSWORD = "smtp_password";
+
+    public static final String OTP_HOSTS = "otp_hosts";
 }

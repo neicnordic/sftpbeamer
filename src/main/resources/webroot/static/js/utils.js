@@ -1,11 +1,11 @@
-/**
- * Created by Xiaxi Li on 26/Aug/2015.
- */
 var host1_table;
 var host2_table;
 var server_info;
 
 var transfer_target;
+
+//host-specific configuration info from file.
+var host_info;
 
 //variables for uploading files
 var upload_target;
@@ -32,6 +32,71 @@ function downloadFile(url) {
             200: function () {
                 var iframe = document.getElementById('download_iframe');
                 iframe.src = url;
+            },
+            404: function () {
+                var source = url.substring(url.indexOf('source=') + 7);
+                var username = $('#' + source + '-username').val();
+                var hostname = $('#' + source + '-hostname').val();
+                var port = $('#' + source + '-port').val();
+                var is_otp = host_info['otp_hosts'].includes(hostname);
+
+                if (is_otp) {
+                    $('#input_credential_modal .modal-body').html('<p>In order to download data, you need to reconnect to host <b id="host-for-connection"></b> again.</p>' +
+                        ' <div class="form-group">' +
+                        ' <label for="password-for-connection" class="sr-only">Password</label>' +
+                        ' <input type="password" class="form-control form-input" id="password-for-connection" placeholder="Password" autofocus size="15"> </div>' +
+                        ' <div class="form-group"> <label for="otp-for-connection" class="sr-only">One-time Code</label>' +
+                        ' <input type="text" class="form-control form-input" id="otp-for-connection" placeholder="One-time Code" maxlength="20" size="15"> </div>');
+                } else {
+                    $('#input_credential_modal .modal-body').html('<p>In order to download data, you need to reconnect to host <b id="host-for-connection"></b> again.</p>' +
+                        ' <div class="form-group"><label for="password-for-connection" class="sr-only">Password</label>' +
+                        ' <input type="password" class="form-control form-input" id="password-for-connection" placeholder="Password" autofocus size="15"></div>');
+                }
+
+                $('#host-for-connection').text(hostname);
+
+                $('#input_credential_modal').modal({
+                    keyboard: false,
+                    backdrop: 'static'
+                });
+                
+                $('#input_credential_submit').click(function (event) {
+                    event.preventDefault();
+                    if (is_otp) {
+                        var data = JSON.stringify({
+                            "username": username, "otc": $('#otp-for-connection').val(), "password": $('#password-for-connection').val(), "hostname": hostname, "port": port, "source": source
+                        });
+                    } else {
+                        var data = JSON.stringify({
+                            "username": username, "otc": "", "password": $('#password-for-connection').val(), "hostname": hostname, "port": port, "source": source
+                        });
+                    }
+
+                    ajaxAsyncCall({
+                        type: "POST",
+                        url: "/sftp/connect",
+                        data: data,
+                        contentType: 'application/json; charset=utf-8',
+                        statusCode: {
+                            200: function () {
+                                $('#input_credential_modal').modal('hide');
+                                showInfoAlertInTop(source, "Downloading is started.");
+
+                                var iframe = document.getElementById('download_iframe');
+                                iframe.src = url;
+                            },
+                            400: function () {
+                                
+                            }
+                        },
+                        error: function (jqXhR, textStatus, errorThrown) {
+                            if (!(errorThrown && errorThrown == "abort")) {
+                                showErrorAlertInTop(source, jqXhR.responseText, errorThrown, "Can't download now.");
+                            }
+                        }
+                    });
+
+                });
             },
             406: function () {
                 showWarningAlertInTop(url.substring(url.lastIndexOf('=') + 1), "You are allowed to download a file or a folder at a time from a server.");
@@ -359,17 +424,36 @@ function transferData(eventData) {
                     showWarningAlertInTop(target, information);
                 },
                 200: function (returnedData) {
+                    var host1_hostname = $('#host1-hostname').val();
+                    var host2_hostname = $('#host2-hostname').val();
                     if (target == "host1") {
-                        $('#password-for-origin').text($('#host1-hostname').val());
-                        $('#password-for-dest').text($('#host2-hostname').val());
+                        $('#credential-for-origin').text(host1_hostname);
+                        $('#credential-for-dest').text(host2_hostname);
+
+                        if (host_info['otp_hosts'].includes(host1_hostname)) {
+                            $('#credential-for-origin-input').after('<input type="text" class="form-control form-input" id="credential-for-origin-otc" placeholder="One-time Code" maxlength="20" size="15">');
+                        }
+
+                        if (host_info['otp_hosts'].includes(host2_hostname)) {
+                            $('#credential-for-dest-input').after('<input type="text" class="form-control form-input" id="credential-for-dest-otc" placeholder="One-time Code" maxlength="20" size="15">');
+                        }
+
                     } else if (target == "host2") {
-                        $('#password-for-origin').text($('#host2-hostname').val());
-                        $('#password-for-dest').text($('#host1-hostname').val());
+                        $('#credential-for-origin').text(host2_hostname);
+                        $('#credential-for-dest').text(host1_hostname);
+
+                        if (host_info['otp_hosts'].includes(host2_hostname)) {
+                            $('#credential-for-origin-input').after('<input type="text" class="form-control form-input" id="credential-for-origin-otc" placeholder="One-time Code" maxlength="20" size="15">');
+                        }
+
+                        if (host_info['otp_hosts'].includes(host1_hostname)) {
+                            $('#credential-for-dest-input').after('<input type="text" class="form-control form-input" id="credential-for-dest-otc" placeholder="One-time Code" maxlength="20" size="15">');
+                        }
                     }
 
-                    $('#password-for-origin-input').val('');
+                    $('#credential-for-origin-input').val('');
 
-                    $('#password-for-dest-input').val('');
+                    $('#credential-for-dest-input').val('');
 
                     $('#notification-email').val('');
 
@@ -383,9 +467,13 @@ function transferData(eventData) {
                         if (target == "host1") {
                             transfer_target = "host2";
 
+                            var origin_otc = host_info['otp_hosts'].includes(host1_hostname) ? $('#credential-for-origin-otc').val() : '';
+
+                            var dest_otc = host_info['otp_hosts'].includes(host2_hostname) ? $('#credential-for-dest-otc').val() : '';
+
                             transferredData = JSON.stringify({
-                                "from": {"path": from_path, "hostname": $('#host1-hostname').val(), "port": parseInt($('#host1-port').val()), "username": $('#host1-username').val(), "password": $('#password-for-origin-input').val()},
-                                "to": {"path": to_path, "hostname": $('#host2-hostname').val(), "port": parseInt($('#host2-port').val()), "username": $('#host2-username').val(), "password": $('#password-for-dest-input').val()},
+                                "from": {"otc": origin_otc,"path": from_path, "hostname": $('#host1-hostname').val(), "port": parseInt($('#host1-port').val()), "username": $('#host1-username').val(), "password": $('#credential-for-origin-input').val()},
+                                "to": {"otc": dest_otc, "path": to_path, "hostname": $('#host2-hostname').val(), "port": parseInt($('#host2-port').val()), "username": $('#host2-username').val(), "password": $('#credential-for-dest-input').val()},
                                 "data": returnedData,
                                 "email": $('#notification-email').val()
                             });
@@ -393,8 +481,8 @@ function transferData(eventData) {
                             transfer_target = "host1";
 
                             transferredData = JSON.stringify({
-                                "from": {"path": from_path, "hostname": $('#host2-hostname').val(), "port": parseInt($('#host2-port').val()), "username": $('#host2-username').val(), "password": $('#password-for-origin-input').val()},
-                                "to": {"path": to_path, "hostname": $('#host1-hostname').val(), "port": parseInt($('#host1-port').val()), "username": $('#host1-username').val(), "password": $('#password-for-dest-input').val()},
+                                "from": {"path": from_path, "hostname": $('#host2-hostname').val(), "port": parseInt($('#host2-port').val()), "username": $('#host2-username').val(), "password": $('#credential-for-origin-input').val()},
+                                "to": {"path": to_path, "hostname": $('#host1-hostname').val(), "port": parseInt($('#host1-port').val()), "username": $('#host1-username').val(), "password": $('#credential-for-dest-input').val()},
                                 "data": returnedData,
                                 "email": $('#notification-email').val()
                             })

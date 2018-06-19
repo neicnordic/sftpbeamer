@@ -100,10 +100,11 @@ public final class HttpRequestHandler {
                 try {
 
                     logger.debug("User {} is Connecting to host {}", userName, hostName);
-                    if (otc.isEmpty()) {
-                        sftpSessionManager.createSftpSession(sessionId, source, userName, password, hostName, Integer.parseInt(port));
-                    } else {
+                    String otpHosts = Config.valueOf(ConfigName.OTP_HOSTS);
+                    if (otpHosts.contains(hostName)) {
                         sftpSessionManager.createSftpSession(sessionId, source, userName, password, otc, hostName, Integer.parseInt(port));
+                    } else {
+                        sftpSessionManager.createSftpSession(sessionId, source, userName, password, hostName, Integer.parseInt(port));
                     }
 
                     logger.debug("User {} connects to host {} successfully", userName, hostName);
@@ -112,6 +113,35 @@ public final class HttpRequestHandler {
                     logger.error("User {} failed to connect to host {}, because error {} happens.", userName, hostName, e.getMessage());
                     routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end(e.getMessage());
                 }
+            });
+        }, JsonKey.USERNAME, JsonKey.PASSWORD, JsonKey.HOSTNAME, JsonKey.PORT, JsonKey.SOURCE);
+    }
+
+    /**
+     * This method is used to create a connection, which is dedicated to downloading a file or a folder.
+     */
+    static void connectHandler(RoutingContext routingContext) {
+        validateRequestBody(routingContext, () -> {
+            JsonObject requestJsonBody = routingContext.getBodyAsJson();
+            String userName = requestJsonBody.getString(JsonKey.USERNAME);
+            String otc = requestJsonBody.getString(JsonKey.OTC);
+            String password = requestJsonBody.getString(JsonKey.PASSWORD);
+            String hostName = requestJsonBody.getString(JsonKey.HOSTNAME);
+            String port = requestJsonBody.getString(JsonKey.PORT);
+            String source = requestJsonBody.getString(JsonKey.SOURCE);
+
+            validateSpecificConstraint(routingContext, () -> (source.equals(HOST1) || source.equals(HOST2)) && StringUtils.isNumeric(port), () -> {
+                String sessionId = routingContext.session().id();
+
+                try {
+                    SftpSessionManager.getManager().createDownloadSftpSession(sessionId, source, userName, password, otc, hostName, Integer.valueOf(port));
+
+                    routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
+                } catch (JSchException e) {
+                    logger.error("User {} failed to connect to host {}, because error {} happens.", userName, hostName, e.getMessage());
+                    routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
+                }
+
             });
         }, JsonKey.USERNAME, JsonKey.PASSWORD, JsonKey.HOSTNAME, JsonKey.PORT, JsonKey.SOURCE);
     }
@@ -226,20 +256,22 @@ public final class HttpRequestHandler {
                 String fromOtc = from.getString(JsonKey.OTC);
                 String fromPath = from.getString(JsonKey.PATH);
                 com.jcraft.jsch.Session fromSession = null;
+
+                JsonObject to = requestBody.getJsonObject(JsonKey.TO);
+                String toHost = to.getString(JsonKey.HOSTNAME);
+                int toPort = to.getInteger(JsonKey.PORT);
+                String toUserName = to.getString(JsonKey.USERNAME);
+                String toPassword = to.getString(JsonKey.PASSWORD);
+                String toOtc = to.getString(JsonKey.OTC);
+                String toPath = to.getString(JsonKey.PATH);
                 com.jcraft.jsch.Session toSession = null;
                 try {
                     fromSession = Utils.createSftpSession(fromUserName, fromPassword, fromHost, fromPort, StringUtils.isEmpty(fromOtc) ? Optional.empty() : Optional.of(fromOtc));
-                    ChannelSftp fromChannel = Utils.openSftpChannel(fromSession);
+                    toSession = Utils.createSftpSession(toUserName, toPassword, toHost, toPort, StringUtils.isEmpty(toOtc) ? Optional.empty() : Optional.of(toOtc));
 
-                    JsonObject to = requestBody.getJsonObject(JsonKey.TO);
-                    String toHost = to.getString(JsonKey.HOSTNAME);
-                    int toPort = to.getInteger(JsonKey.PORT);
-                    String toUserName = to.getString(JsonKey.USERNAME);
-                    String toPassword = to.getString(JsonKey.PASSWORD);
-                    String toOtc = to.getString(JsonKey.OTC);
-                    String toPath = to.getString(JsonKey.PATH);
                     try {
-                        toSession = Utils.createSftpSession(toUserName, toPassword, toHost, toPort, StringUtils.isEmpty(toOtc) ? Optional.empty() : Optional.of(toOtc));
+
+                        ChannelSftp fromChannel = Utils.openSftpChannel(fromSession);
                         ChannelSftp toChannel = Utils.openSftpChannel(toSession);
 
 
@@ -535,10 +567,15 @@ public final class HttpRequestHandler {
     static void downloadCheckHandler(RoutingContext routingContext) {
         String source = routingContext.request().getParam(UrlParam.SOURCE);
         String sessionId = routingContext.session().id();
-        if (DownloadCounter.getCounter().checkIfBusy(sessionId + source)) {
-            routingContext.response().setStatusCode(HttpResponseStatus.NOT_ACCEPTABLE.code()).end();
+
+        if (SftpSessionManager.getManager().isDownloadSessionExisting(sessionId, source)) {
+            if (DownloadCounter.getCounter().checkIfBusy(sessionId + source)) {
+                routingContext.response().setStatusCode(HttpResponseStatus.NOT_ACCEPTABLE.code()).end();
+            } else {
+                routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
+            }
         } else {
-            routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
+            routingContext.response().setStatusCode(HttpResponseStatus.NOT_FOUND.code()).end();
         }
     }
 

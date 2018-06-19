@@ -7,8 +7,7 @@ $(document).ready(function() {
     var hostname;
     var port;
 
-    // Read host-specific configuration info from file.
-    var host_info = [];
+
     $.ajax({
         type: 'GET',
         url: '/sftp/info',

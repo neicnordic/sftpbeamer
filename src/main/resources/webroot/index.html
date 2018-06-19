@@ -46,14 +46,14 @@
             <form>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="password-for-origin-input">Password for <b id="password-for-origin"></b></label>
-                        <input type="password" class="form-control form-input" id="password-for-origin-input"
-                               placeholder="Password" autofocus maxlength="20" size="15">
+                        <label for="credential-for-origin-input">Credential for <b id="credential-for-origin"></b></label>
+                        <input type="password" class="form-control form-input" id="credential-for-origin-input"
+                               placeholder="Password" autofocus size="15">
                     </div>
                     <div class="form-group">
-                        <label for="password-for-dest-input">Password for <b id="password-for-dest"></b></label>
-                        <input type="password" class="form-control form-input" id="password-for-dest-input"
-                               placeholder="Password" maxlength="20" size="15">
+                        <label for="credential-for-dest-input">Credential for <b id="credential-for-dest"></b></label>
+                        <input type="password" class="form-control form-input" id="credential-for-dest-input"
+                               placeholder="Password" size="15">
                     </div>
                     <div class="form-group">
                         <label for="notification-email">Email for notification</label>
@@ -112,6 +112,26 @@
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary" id="credential_submit">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" role="dialog" id="input_credential_modal" tabindex="-1" aria-labelledby="input_credential_modal_label">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h5 class="modal-title" id="input_credential_modal_label">Please input credential</h5>
+            </div>
+            <form>
+                <div class="modal-body">
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary" id="input_credential_submit">Submit</button>
                 </div>
             </form>
         </div>

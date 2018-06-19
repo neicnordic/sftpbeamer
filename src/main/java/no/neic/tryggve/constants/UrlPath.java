@@ -16,4 +16,5 @@ public final class UrlPath {
     public static final String SFTP_ZIP = "/sftp/zip";
     public static final String SFTP_DOWNLOAD_CHECK = "/sftp/download/check";
     public static final String SFTP_FILE_CHECK = "/sftp/file/check";
+    public static final String SFTP_CONNECT = "/sftp/connect";
 }

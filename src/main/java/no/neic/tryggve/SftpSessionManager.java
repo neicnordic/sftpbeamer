@@ -1,12 +1,12 @@
 package no.neic.tryggve;
 
 
-import com.jcraft.jsch.*;
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -36,20 +36,13 @@ public final class SftpSessionManager {
 
     public void createSftpSession(String sessionId, String source,
                                   String userName, String password, String otc, String hostName, int port) throws JSchException {
-        JSch jSch = new JSch();
-        Session session = jSch.getSession(userName, hostName, port);
-        JSch.setConfig("StrictHostKeyChecking", "no");
-        session.setUserInfo(new TwoStepsAuth(password, otc));
-        session.connect();
-
-        Session sessionDownload = jSch.getSession(userName, hostName, port);
-        JSch.setConfig("StrictHostKeyChecking", "no");
-        sessionDownload.setUserInfo(new TwoStepsAuth(password, otc));
-        sessionDownload.connect();
-
-        saveSftpSession(sessionId, source,
-                Utils.createSftpSession(userName, password, hostName, port, Optional.of(otc)),
-                Utils.createSftpSession(userName, password, hostName, port, Optional.of(otc)));
+        if (otc.isEmpty()) {
+            saveSftpSession(sessionId, source,
+                    Utils.createSftpSession(userName, password, hostName, port, Optional.empty()), null);
+        } else {
+            saveSftpSession(sessionId, source,
+                    Utils.createSftpSession(userName, password, hostName, port, Optional.of(otc)), null);
+        }
     }
 
     public void createSftpSession(String sessionId, String source,
@@ -85,6 +78,38 @@ public final class SftpSessionManager {
             channelSftp = null;
         }
         return channelSftp;
+    }
+
+    public void createDownloadSftpSession(String sessionId, String source,
+                                          String userName, String password, String otc, String hostName, int port) throws JSchException {
+        Session session;
+        if (otc.isEmpty()) {
+            session = Utils.createSftpSession(userName, password, hostName, port, Optional.empty());
+        } else {
+            session = Utils.createSftpSession(userName, password, hostName, port, Optional.of(otc));
+        }
+
+        if (source.equals(HOST1)) {
+            sftpConnectionHolderMap.get(sessionId).setHost1Download(session);
+        }
+
+        if (source.equals(HOST2)) {
+            sftpConnectionHolderMap.get(sessionId).setHost2Download(session);
+        }
+    }
+
+    public boolean isDownloadSessionExisting(String sessionId, String source) {
+        if (sftpConnectionHolderMap.containsKey(sessionId)) {
+            if (source.equals(HOST1)) {
+                return sftpConnectionHolderMap.get(sessionId).getHost1Download() != null;
+            } else if (source.equals(HOST2)) {
+                return sftpConnectionHolderMap.get(sessionId).getHost2Download() != null;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
     }
 
     public void disconnectSftp(String sessionId, String source) {
