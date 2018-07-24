@@ -424,6 +424,15 @@ function transferData(eventData) {
                     showWarningAlertInTop(target, information);
                 },
                 200: function (returnedData) {
+                    var credential_for_origin_otc = $('#credential-for-origin-otc');
+                    var credential_for_origin_password = $('#credential-for-origin-password');
+                    var credential_for_dest_otc = $('#credential-for-dest-otc');
+                    var credential_for_dest_password = $('#credential-for-dest-password');
+
+                    var notification_email_form = $('#notification-email-form');
+                    var credential_for_origin_form = $('#credential-for-origin-form');
+                    var credential_for_dest_form = $('#credential-for-dest-form');
+
                     var host1_hostname = $('#host1-hostname').val();
                     var host2_hostname = $('#host2-hostname').val();
                     if (target == "host1") {
@@ -431,11 +440,17 @@ function transferData(eventData) {
                         $('#credential-for-dest').text(host2_hostname);
 
                         if (host_info['otp_hosts'].includes(host1_hostname)) {
-                            $('#credential-for-origin-input').after('<input type="text" class="form-control form-input" id="credential-for-origin-otc" placeholder="One-time Code" maxlength="20" size="15">');
+                            credential_for_origin_otc.removeClass('hidden');
+                            credential_for_origin_otc.val('');
+                        } else {
+                            credential_for_origin_otc.addClass('hidden');
                         }
 
                         if (host_info['otp_hosts'].includes(host2_hostname)) {
-                            $('#credential-for-dest-input').after('<input type="text" class="form-control form-input" id="credential-for-dest-otc" placeholder="One-time Code" maxlength="20" size="15">');
+                            credential_for_dest_otc.removeClass('hidden');
+                            credential_for_dest_otc.val('');
+                        } else {
+                            credential_for_dest_otc.addClass('hidden');
                         }
 
                     } else if (target == "host2") {
@@ -443,68 +458,116 @@ function transferData(eventData) {
                         $('#credential-for-dest').text(host1_hostname);
 
                         if (host_info['otp_hosts'].includes(host2_hostname)) {
-                            $('#credential-for-origin-input').after('<input type="text" class="form-control form-input" id="credential-for-origin-otc" placeholder="One-time Code" maxlength="20" size="15">');
+                            credential_for_origin_otc.removeClass('hidden');
+                            credential_for_origin_otc.val('');
+                        } else {
+                            credential_for_origin_otc.addClass('hidden');
                         }
 
                         if (host_info['otp_hosts'].includes(host1_hostname)) {
-                            $('#credential-for-dest-input').after('<input type="text" class="form-control form-input" id="credential-for-dest-otc" placeholder="One-time Code" maxlength="20" size="15">');
+                            credential_for_dest_otc.removeClass('hidden');
+                            credential_for_dest_otc.val('');
+                        } else {
+                            credential_for_dest_otc.addClass('hidden');
                         }
                     }
 
-                    $('#credential-for-origin-input').val('');
-
-                    $('#credential-for-dest-input').val('');
-
+                    credential_for_origin_password.val('');
+                    credential_for_dest_password.val('');
                     $('#notification-email').val('');
+
+                    if (notification_email_form.hasClass('hidden')) {
+                        notification_email_form.removeClass('hidden');
+                    }
+                    if (!credential_for_origin_form.hasClass('hidden')) {
+                        credential_for_origin_form.addClass('hidden');
+                    }
+
+                    if (!credential_for_dest_form.hasClass('hidden')) {
+                        credential_for_dest_form.addClass('hidden');
+                    }
 
                     $('#transfer_modal').modal({
                         keyboard: false,
                         backdrop: 'static'
                     });
 
-                    $('#confirm-transfer-btn').click(function(event){
-                        event.preventDefault();
-                        if (target == "host1") {
-                            transfer_target = "host2";
+                    $('#confirm-email-btn').click(function (event) {
+                        var email = $('#notification-email').val();
 
-                            var origin_otc = host_info['otp_hosts'].includes(host1_hostname) ? $('#credential-for-origin-otc').val() : '';
+                        notification_email_form.addClass('hidden');
+                        credential_for_origin_form.removeClass('hidden');
 
-                            var dest_otc = host_info['otp_hosts'].includes(host2_hostname) ? $('#credential-for-dest-otc').val() : '';
+                        $('#confirm-origin-btn').click(function(event){
 
-                            transferredData = JSON.stringify({
-                                "from": {"otc": origin_otc,"path": from_path, "hostname": $('#host1-hostname').val(), "port": parseInt($('#host1-port').val()), "username": $('#host1-username').val(), "password": $('#credential-for-origin-input').val()},
-                                "to": {"otc": dest_otc, "path": to_path, "hostname": $('#host2-hostname').val(), "port": parseInt($('#host2-port').val()), "username": $('#host2-username').val(), "password": $('#credential-for-dest-input').val()},
-                                "data": returnedData,
-                                "email": $('#notification-email').val()
-                            });
-                        } else if (target == "host2") {
-                            transfer_target = "host1";
-
-                            transferredData = JSON.stringify({
-                                "from": {"path": from_path, "hostname": $('#host2-hostname').val(), "port": parseInt($('#host2-port').val()), "username": $('#host2-username').val(), "password": $('#credential-for-origin-input').val()},
-                                "to": {"path": to_path, "hostname": $('#host1-hostname').val(), "port": parseInt($('#host1-port').val()), "username": $('#host1-username').val(), "password": $('#credential-for-dest-input').val()},
-                                "data": returnedData,
-                                "email": $('#notification-email').val()
-                            })
-                        }
-
-                        ajaxAsyncCall({
-                            type: "POST",
-                            url: "/sftp/transfer/async",
-                            data: transferredData,
-                            dataType: "json",
-                            contentType: 'application/json; charset=utf-8',
-                            statusCode: {
-                                201: function () {
-                                    $('#transfer_modal').modal('hide');
-                                    showInfoAlertInTop(target, "The task of data transfer is submitted.");
-                                }
-                            },
-                            error: function (jqXhR, textStatus, errorThrown) {
-                                if (!(errorThrown && errorThrown == "abort")) {
-                                    showErrorAlertInTop(target, jqXhR.responseText, errorThrown, "Can't transfer data.");
-                                }
+                            var origin_username;
+                            var origin_host;
+                            var dest_username;
+                            var dest_host;
+                            if (target == "host1") {
+                                origin_username = $('#host1-username').val();
+                                origin_host = host1_hostname;
+                                dest_username = $('#host2-username').val();
+                                dest_host = host2_hostname;
                             }
+                            if (target == "host2") {
+                                origin_username = $('#host2-username').val();
+                                origin_host = host2_hostname;
+                                dest_username = $('#host1-username').val();
+                                dest_host = host1_hostname;
+                            }
+
+                            var origin_password = credential_for_origin_password.val();
+                            var origin_otc = host_info['otp_hosts'].includes(origin_host) ? credential_for_origin_otc.val() : '';
+
+                            ajaxAsyncCall({
+                                type: "POST",
+                                url: "/sftp/transfer/register",
+                                data: JSON.stringify({"username": origin_username, "password": origin_password, "hostname": origin_host, "otc": origin_otc, "port": 22, "email": email}),
+                                contentType: 'application/json; charset=utf-8',
+                                statusCode: {
+                                    200: function () {
+                                        credential_for_origin_form.addClass('hidden');
+                                        credential_for_dest_form.removeClass('hidden');
+
+                                        $('#confirm-transfer-btn').click(function (event) {
+                                            var dest_password = $('#credential-for-dest-password').val();
+                                            var dest_otc = host_info['otp_hosts'].includes(dest_host) ? $('#credential-for-dest-otc').val() : '';
+
+                                            ajaxAsyncCall({
+                                                type: "POST",
+                                                url: "/sftp/transfer/job/submit",
+                                                data: JSON.stringify({"data": returnedData, "username": dest_username, "password": dest_password, "hostname": dest_host, "otc": dest_otc, "port": 22, "email": email, "from": {"hostname": origin_host, "path": from_path}, "to": {"hostname": dest_host, "path": to_path}}),
+                                                contentType: 'application/json; charset=utf-8',
+                                                statusCode: {
+                                                    200: function () {
+                                                        $('#transfer_modal').modal('hide');
+                                                        showInfoAlertInTop(target, "The task of data transfer is submitted.");
+                                                    },
+                                                    400: function () {
+
+                                                    },
+                                                    404: function () {
+
+                                                    },
+                                                    500: function () {
+
+                                                    }
+                                                }
+                                            });
+                                        });
+                                    },
+                                    403: function () {
+
+                                    },
+                                    400: function () {
+
+                                    },
+                                    500: function () {
+
+                                    }
+                                }
+                            });
                         });
                     });
                 }

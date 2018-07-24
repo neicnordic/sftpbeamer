@@ -236,135 +236,77 @@ public final class HttpRequestHandler {
     }
 
     /**
-     * This method is used to receive a request of transfer data from one host to the other one in an asynchronous way. After data transfer is done, an email will be sent.
-     * The request body looks like {"from": {"hostname": "", "port": 22, "username": "", "password":"", "otc": "", "path": ""},
-     * "to": {"hostname": "", "port": 22, "username": "", "password":"", "otc": "", "path": ""}, "data": [], "email": "xxx@xxx.xx"}
+     * This method is used to register a data transfer job and create a sftp session where the data comes from. The request body looks like
+     * {"username": "", "password": "", "hostname": "", "port": 12, "otc": "", "email": ""}
+     *
      */
-    static void asyncTransferHandler(RoutingContext routingContext) {
+    static void registerTransferHandler(RoutingContext routingContext) {
 
         validateRequestBody(routingContext, () -> {
 
-            routingContext.vertx().<JsonObject>executeBlocking(future -> {
-                JsonObject result = new JsonObject();
-                JsonObject requestBody = routingContext.getBodyAsJson();
+            try {
+                if (RegisterJobManager.getManager().register(routingContext.getBodyAsJson())) {
+                    routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
+                } else {
+                    //If a registered job has not been started, a new job related to the same email is not allowed to be registered.
+                    routingContext.response().setStatusCode(HttpResponseStatus.FORBIDDEN.code()).end();
+                }
+            } catch (JSchException e) {
+                logger.error("Register job fails", e.getCause());
+                routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
+            }
+        }, JsonKey.EMAIL, JsonKey.USERNAME, JsonKey.PASSWORD, JsonKey.HOSTNAME, JsonKey.PORT);
+    }
 
-                JsonObject from = requestBody.getJsonObject(JsonKey.FROM);
-                String fromHost = from.getString(JsonKey.HOSTNAME);
-                int fromPort = from.getInteger(JsonKey.PORT);
-                String fromUserName = from.getString(JsonKey.USERNAME);
-                String fromPassword = from.getString(JsonKey.PASSWORD);
-                String fromOtc = from.getString(JsonKey.OTC);
-                String fromPath = from.getString(JsonKey.PATH);
-                com.jcraft.jsch.Session fromSession = null;
+    /**
+     * This method is used to submit a data transfer job. The request body looks like
+     * {"from": {"hostname": "", "path": ""}, "to": {"hostname": "", "path": ""}, "data": [], "email": "xxx@xxx.xx",
+     * "username": "", "password": "", "hostname": "", "port": 12, "otc": ""}.
+     */
+    static void submitDataTransferHandler(RoutingContext routingContext) {
+        validateRequestBody(routingContext, () -> {
+            JsonObject requestJsonBody = routingContext.getBodyAsJson();
 
-                JsonObject to = requestBody.getJsonObject(JsonKey.TO);
-                String toHost = to.getString(JsonKey.HOSTNAME);
-                int toPort = to.getInteger(JsonKey.PORT);
-                String toUserName = to.getString(JsonKey.USERNAME);
-                String toPassword = to.getString(JsonKey.PASSWORD);
-                String toOtc = to.getString(JsonKey.OTC);
-                String toPath = to.getString(JsonKey.PATH);
-                com.jcraft.jsch.Session toSession = null;
-                try {
-                    fromSession = Utils.createSftpSession(fromUserName, fromPassword, fromHost, fromPort, StringUtils.isEmpty(fromOtc) ? Optional.empty() : Optional.of(fromOtc));
-                    toSession = Utils.createSftpSession(toUserName, toPassword, toHost, toPort, StringUtils.isEmpty(toOtc) ? Optional.empty() : Optional.of(toOtc));
+            String receiverEmail = requestJsonBody.getString(JsonKey.EMAIL);
 
-                    try {
+            try {
+                com.jcraft.jsch.Session toSession = Utils.createSftpSession(
+                        requestJsonBody.getString(JsonKey.USERNAME),
+                        requestJsonBody.getString(JsonKey.PASSWORD),
+                        requestJsonBody.getString(JsonKey.HOSTNAME),
+                        requestJsonBody.getInteger(JsonKey.PORT),
+                        StringUtils.isEmpty(requestJsonBody.getString(JsonKey.OTC)) ? Optional.empty() : Optional.of(requestJsonBody.getString(JsonKey.OTC)));
 
-                        ChannelSftp fromChannel = Utils.openSftpChannel(fromSession);
-                        ChannelSftp toChannel = Utils.openSftpChannel(toSession);
-
-
-                        JsonArray filesArray = requestBody.getJsonArray(JsonKey.DATA);
-
-                        JsonArray successArray = new JsonArray();
-                        JsonArray failedArray = new JsonArray();
-
-                        for (Object object : filesArray) {
-                            String fromFile = StringUtils.join(fromPath, FileSystems.getDefault().getSeparator(), object.toString());
-                            String toFile = StringUtils.join(toPath, FileSystems.getDefault().getSeparator(), object.toString());
-                            try {
-                                fromChannel.get(fromFile, toChannel.put(toFile));
-                                successArray.add(fromFile);
-                            } catch (SftpException e) {
-                                logger.error("Failed to transfer file {}", e.getCause(), fromFile);
-                                failedArray.add(fromFile);
-                            }
-                        }
-                        result.put(JsonKey.FROM, fromHost).put(JsonKey.TO, toHost).put(JsonKey.SUCCESS, successArray).put(JsonKey.FAILED, failedArray).put(JsonKey.STATUS, "success").put(JsonKey.EMAIL, requestBody.getString(JsonKey.EMAIL));
-                        future.complete(result);
-                    } catch (JSchException e) {
-                        logger.error("User " + toUserName + " can't login host " + toHost, e.getCause());
-                        result.put(JsonKey.MESSAGE, "connecting with " + toHost + " failed");
-                        result.put(JsonKey.FROM, fromHost);
-                        result.put(JsonKey.DATA, requestBody.getJsonArray(JsonKey.DATA));
-                        result.put(JsonKey.STATUS, "failed");
-                        result.put(JsonKey.EMAIL, requestBody.getString(JsonKey.EMAIL));
-                        future.complete(result);
-                    }
-                } catch (JSchException e) {
-                    logger.error("User " + fromUserName + " can't login host " + fromHost, e.getCause());
-                    result.put(JsonKey.MESSAGE, "connecting with " + fromHost + " failed");
-                    result.put(JsonKey.FROM, fromHost);
-                    result.put(JsonKey.DATA, requestBody.getJsonArray(JsonKey.DATA));
-                    result.put(JsonKey.EMAIL, requestBody.getString(JsonKey.EMAIL));
-                    result.put(JsonKey.STATUS, "failed");
-                    future.complete(result);
-                } finally {
-                    if (fromSession != null && fromSession.isConnected()) {
-                        fromSession.disconnect();
-                    }
+                com.jcraft.jsch.Session fromSession = RegisterJobManager.getManager().fetch(receiverEmail);
+                if (fromSession == null) {
                     if (toSession != null && toSession.isConnected()) {
                         toSession.disconnect();
                     }
+                    routingContext.response().setStatusCode(HttpResponseStatus.NOT_FOUND.code()).end();
+                } else {
+
+                    TransferJob job = new TransferJob();
+                    job.setFrom(fromSession);
+                    job.setTo(toSession);
+                    job.setEmail(receiverEmail);
+                    job.setJob(requestJsonBody);
+
+
+                    routingContext.vertx().executeBlocking(job::execute, false, asyncResult ->
+                                    routingContext.vertx().executeBlocking(future ->
+                                        job.sendEmail(asyncResult.result())
+                                    , false, asyncResult1 -> {
+                                    })
+                    );
+                    routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end();
                 }
-            }, false, asyncResult -> {
-                if (asyncResult.succeeded()) {
-                    routingContext.vertx().executeBlocking(future -> {
-                        JsonObject result = asyncResult.result();
-                        try {
-                            Email email = new SimpleEmail();
-                            email.setHostName(Config.valueOf(ConfigName.SMTP_HOST));
-                            email.setAuthenticator(new DefaultAuthenticator(Config.valueOf(ConfigName.SMTP_USER_NAME), Config.valueOf(ConfigName.SMTP_PASSWORD)));
-                            if (Boolean.valueOf(Config.valueOf(ConfigName.SMTP_SSL))) {
-                                email.setSSLOnConnect(true);
-                                email.setStartTLSEnabled(true);
-                                email.setStartTLSRequired(true);
-                                email.setSslSmtpPort(Config.valueOf(ConfigName.SMTP_PORT));
-                            } else {
-                                email.setSmtpPort(Integer.valueOf(Config.valueOf(ConfigName.SMTP_PORT)));
-                            }
-                            email.setFrom(Config.valueOf(ConfigName.FROM_EMAIL));
-                            email.addTo(result.getString(JsonKey.EMAIL));
+            } catch (JSchException e) {
+                logger.error("Connecting to host {} fails", e.getCause(), requestJsonBody.getString(JsonKey.HOSTNAME));
+                RegisterJobManager.getManager().remove(receiverEmail);
+                routingContext.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
+            }
 
-                            if (result.getString(JsonKey.STATUS).equals("success")) {
-                                email.setSubject("Data transfer is done");
-                                String message = "";
-                                if (result.getJsonArray(JsonKey.FAILED) != null && result.getJsonArray(JsonKey.FAILED).size() != 0) {
-                                    message = "The following files " + StringUtils.join(result.getJsonArray(JsonKey.FAILED).getList(), ",") + " failed to be transferred from " + result.getString(JsonKey.FROM) + " to " + result.getString(JsonKey.TO) + ".";
-                                }
-                                if (result.getJsonArray(JsonKey.SUCCESS) != null && result.getJsonArray(JsonKey.SUCCESS).size() != 0) {
-                                    message = message + " The following files " + StringUtils.join(result.getJsonArray(JsonKey.SUCCESS).getList(), ",") + " succeeded to be transferred from " + result.getString(JsonKey.FROM) + " to " + result.getString(JsonKey.TO) + ".";
-                                }
-                                email.setMsg(message);
-                            }
-                            if (result.getString(JsonKey.STATUS).equals("failed")) {
-                                email.setSubject("Data transfer failed");
-                                String message = "The following files " + StringUtils.join(result.getJsonArray(JsonKey.DATA), ",") + " failed to transfer, because " + result.getString(JsonKey.MESSAGE) + ".";
-                                email.setMsg(message);
-                            }
-                            email.send();
-                            logger.debug("Have sent email to {}", result.getString(JsonKey.EMAIL));
-                        } catch (EmailException e) {
-                            logger.error("Sending email to " + result.getString(JsonKey.EMAIL) + " failed.", e.getCause());
-                        }
-                    }, false, asyncResult1 -> {});
-                }
-            });
-
-            routingContext.response().setStatusCode(HttpResponseStatus.CREATED.code()).end();
-
-        }, JsonKey.FROM, JsonKey.TO, JsonKey.DATA, JsonKey.EMAIL);
+        }, JsonKey.FROM, JsonKey.TO, JsonKey.DATA, JsonKey.EMAIL, JsonKey.USERNAME, JsonKey.PASSWORD, JsonKey.HOSTNAME, JsonKey.PORT);
     }
 
     /**

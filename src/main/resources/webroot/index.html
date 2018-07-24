@@ -44,26 +44,32 @@
                 <h3 class="modal-title">File transfer</h3>
             </div>
             <form>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="credential-for-origin-input">Credential for <b id="credential-for-origin"></b></label>
-                        <input type="password" class="form-control form-input" id="credential-for-origin-input"
-                               placeholder="Password" autofocus size="15">
-                    </div>
-                    <div class="form-group">
-                        <label for="credential-for-dest-input">Credential for <b id="credential-for-dest"></b></label>
-                        <input type="password" class="form-control form-input" id="credential-for-dest-input"
-                               placeholder="Password" size="15">
-                    </div>
-                    <div class="form-group">
+                <div class="modal-body" style="padding-bottom: 45px;">
+                    <div class="form-group" id="notification-email-form">
                         <label for="notification-email">Email for notification</label>
                         <input type="email" class="form-control form-input" id="notification-email" placeholder="Email"
-                               maxlength="20" size="15">
+                               maxlength="25" size="15">
                         <p class="help-block">An email notification will be sent to you once file transfer is done.</p>
+                        <button type="button" id="confirm-email-btn" class="btn btn-primary pull-right">Next</button>
+
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" id="confirm-transfer-btn" class="btn btn-primary">Ok</button>
+                    <div class="form-group hidden" id="credential-for-origin-form">
+                        <p>Credential for <b id="credential-for-origin"></b></p>
+                        <input type="password" class="form-control form-input" id="credential-for-origin-password"
+                               placeholder="Password" autofocus size="15">
+                        <input type="text" class="form-control form-input" id="credential-for-origin-otc"
+                               placeholder="One-time Code" maxlength="15" size="15">
+                        <button type="button" id="confirm-origin-btn" class="btn btn-primary pull-right">Next</button>
+
+                    </div>
+                    <div class="form-group hidden" id="credential-for-dest-form">
+                        <p>Credential for <b id="credential-for-dest"></b></p>
+                        <input type="password" class="form-control form-input" id="credential-for-dest-password"
+                               placeholder="Password" size="15">
+                        <input type="text" class="form-control form-input" id="credential-for-dest-otc"
+                               placeholder="One-time Code" maxlength="15" size="15">
+                        <button type="submit" id="confirm-transfer-btn" class="btn btn-primary pull-right">Ok</button>
+                    </div>
                 </div>
             </form>
         </div>
