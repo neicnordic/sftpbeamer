@@ -43,35 +43,38 @@
                 </button>
                 <h3 class="modal-title">File transfer</h3>
             </div>
-            <form>
-                <div class="modal-body" style="padding-bottom: 45px;">
-                    <div class="form-group" id="notification-email-form">
-                        <label for="notification-email">Email for notification</label>
-                        <input type="email" class="form-control form-input" id="notification-email" placeholder="Email"
-                               maxlength="25" size="15">
-                        <p class="help-block">An email notification will be sent to you once file transfer is done.</p>
-                        <button type="button" id="confirm-email-btn" class="btn btn-primary pull-right">Next</button>
 
-                    </div>
-                    <div class="form-group hidden" id="credential-for-origin-form">
-                        <p>Credential for <b id="credential-for-origin"></b></p>
-                        <input type="password" class="form-control form-input" id="credential-for-origin-password"
-                               placeholder="Password" autofocus size="15">
-                        <input type="text" class="form-control form-input" id="credential-for-origin-otc"
-                               placeholder="One-time Code" maxlength="15" size="15">
-                        <button type="button" id="confirm-origin-btn" class="btn btn-primary pull-right">Next</button>
-
-                    </div>
-                    <div class="form-group hidden" id="credential-for-dest-form">
-                        <p>Credential for <b id="credential-for-dest"></b></p>
-                        <input type="password" class="form-control form-input" id="credential-for-dest-password"
-                               placeholder="Password" size="15">
-                        <input type="text" class="form-control form-input" id="credential-for-dest-otc"
-                               placeholder="One-time Code" maxlength="15" size="15">
-                        <button type="submit" id="confirm-transfer-btn" class="btn btn-primary pull-right">Ok</button>
-                    </div>
+            <div class="modal-body" style="padding-bottom: 45px;">
+                <div class="form-group" id="notification-email-form">
+                    <form>
+                    <label for="notification-email">Email for notification</label>
+                    <input type="email" class="form-control form-input" id="notification-email" placeholder="Email"
+                           size="25" autofocus/>
+                    <p class="help-block">An email notification will be sent to you once file transfer is done.</p>
+                    <button type="submit" id="confirm-email-btn" class="btn btn-primary pull-right">Next</button>
+                    </form>
                 </div>
-            </form>
+                <div class="form-group hidden" id="credential-for-origin-form">
+                    <form>
+                    <p>Credential for <b id="credential-for-origin"></b></p>
+                    <input type="password" class="form-control form-input" id="credential-for-origin-password"
+                           placeholder="Password" autofocus size="25"/>
+                    <input type="text" class="form-control form-input" id="credential-for-origin-otc"
+                           placeholder="One-time Code" maxlength="15" size="15"/>
+                    <button type="submit" id="confirm-origin-btn" class="btn btn-primary pull-right">Next</button>
+                    </form>
+                </div>
+                <div class="form-group hidden" id="credential-for-dest-form">
+                    <form>
+                    <p>Credential for <b id="credential-for-dest"></b></p>
+                    <input type="password" class="form-control form-input" id="credential-for-dest-password"
+                           placeholder="Password" size="25"/>
+                    <input type="text" class="form-control form-input" id="credential-for-dest-otc"
+                           placeholder="One-time Code" maxlength="15" size="15"/>
+                    <button type="submit" id="confirm-transfer-btn" class="btn btn-primary pull-right">Ok</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -219,11 +222,11 @@
                 <form class="form-inline login-form host1-form">
                     <div class="form-group">
                         <label class="sr-only" for="host1-username">User Name</label>
-                        <input type="text" class="form-control form-input" id="host1-username" placeholder="User Name" autofocus maxlength="20" size="15">
+                        <input type="text" class="form-control form-input" id="host1-username" placeholder="User Name" autofocus size="25">
                     </div>
                     <div class="form-group">
                         <label class="sr-only" for="host1-hostname">Hostname</label>
-                        <input type="text" class="form-control form-input" id="host1-hostname" placeholder="Hostname" value="">
+                        <input type="text" class="form-control form-input" id="host1-hostname" placeholder="Hostname" value="" size="30">
                     </div>
                     <div class="form-group">
                         <label class="sr-only" for="host1-port">Port</label>
@@ -251,11 +254,11 @@
                 <form class="form-inline login-form host2-form">
                     <div class="form-group">
                         <label class="sr-only" for="host2-username">User Name</label>
-                        <input type="text" class="form-control form-input" id="host2-username" placeholder="User Name" maxlength="20" size="15">
+                        <input type="text" class="form-control form-input" id="host2-username" placeholder="User Name" size="25">
                     </div>
                     <div class="form-group">
                         <label class="sr-only" for="host2-hostname">Hostname</label>
-                        <input type="text" class="form-control form-input" id="host2-hostname" placeholder="Hostname" value="">
+                        <input type="text" class="form-control form-input" id="host2-hostname" placeholder="Hostname" value="" size="30">
                     </div>
                     <div class="form-group">
                         <label class="sr-only" for="host2-port">Port</label>

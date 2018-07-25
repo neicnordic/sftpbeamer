@@ -44,13 +44,13 @@ function downloadFile(url) {
                     $('#input_credential_modal .modal-body').html('<p>In order to download data, you need to reconnect to host <b id="host-for-connection"></b> again.</p>' +
                         ' <div class="form-group">' +
                         ' <label for="password-for-connection" class="sr-only">Password</label>' +
-                        ' <input type="password" class="form-control form-input" id="password-for-connection" placeholder="Password" autofocus size="15"> </div>' +
+                        ' <input type="password" class="form-control form-input" id="password-for-connection" placeholder="Password" autofocus size="25"> </div>' +
                         ' <div class="form-group"> <label for="otp-for-connection" class="sr-only">One-time Code</label>' +
                         ' <input type="text" class="form-control form-input" id="otp-for-connection" placeholder="One-time Code" maxlength="20" size="15"> </div>');
                 } else {
                     $('#input_credential_modal .modal-body').html('<p>In order to download data, you need to reconnect to host <b id="host-for-connection"></b> again.</p>' +
                         ' <div class="form-group"><label for="password-for-connection" class="sr-only">Password</label>' +
-                        ' <input type="password" class="form-control form-input" id="password-for-connection" placeholder="Password" autofocus size="15"></div>');
+                        ' <input type="password" class="form-control form-input" id="password-for-connection" placeholder="Password" autofocus size="25"></div>');
                 }
 
                 $('#host-for-connection').text(hostname);
@@ -493,13 +493,14 @@ function transferData(eventData) {
                     });
 
                     $('#confirm-email-btn').click(function (event) {
+                        event.preventDefault();
                         var email = $('#notification-email').val();
 
                         notification_email_form.addClass('hidden');
                         credential_for_origin_form.removeClass('hidden');
-
+                        credential_for_origin_password.focus();
                         $('#confirm-origin-btn').click(function(event){
-
+                            event.preventDefault();
                             var origin_username;
                             var origin_host;
                             var dest_username;
@@ -529,8 +530,9 @@ function transferData(eventData) {
                                     200: function () {
                                         credential_for_origin_form.addClass('hidden');
                                         credential_for_dest_form.removeClass('hidden');
-
+                                        credential_for_dest_password.focus();
                                         $('#confirm-transfer-btn').click(function (event) {
+                                            event.preventDefault();
                                             var dest_password = $('#credential-for-dest-password').val();
                                             var dest_otc = host_info['otp_hosts'].includes(dest_host) ? $('#credential-for-dest-otc').val() : '';
 
