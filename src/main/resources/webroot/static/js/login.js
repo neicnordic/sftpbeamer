@@ -20,6 +20,20 @@ $(document).ready(function() {
         async: false
     });
 
+    $('#host1-select').combobox(
+        {
+            clearIfNoMatch: false,
+            appendId: "host1-hostname"
+        }
+    );
+    $('#host2-select').combobox(
+        {
+            clearIfNoMatch: false,
+            appendId: "host2-hostname"
+        }
+    );
+    $('input,.combobox').attr('size', 30);
+
     // Populate the hostname inputs with values from config file
     // $('#host1-hostname').val(host_info.hosts['host1']);
     // $('#host2-hostname').val(host_info.hosts['host2']);

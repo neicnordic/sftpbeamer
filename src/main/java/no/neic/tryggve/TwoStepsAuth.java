@@ -2,6 +2,7 @@ package no.neic.tryggve;
 
 import com.jcraft.jsch.UIKeyboardInteractive;
 import com.jcraft.jsch.UserInfo;
+import org.apache.commons.lang3.ArrayUtils;
 
 public final class TwoStepsAuth implements UserInfo, UIKeyboardInteractive {
     private String password;
@@ -15,10 +16,14 @@ public final class TwoStepsAuth implements UserInfo, UIKeyboardInteractive {
     @Override
     public String[] promptKeyboardInteractive(String destination, String name,
                                               String instruction, String[] prompt, boolean[] echo) {
-        if (prompt[0].contains("Password")) {
-            return new String[]{password};
+        if (ArrayUtils.isEmpty(prompt)) {
+            return new String[0];
         } else {
-            return new String[]{otc};
+            if (prompt[0].trim().toLowerCase().contains("password")) {
+                return new String[]{password};
+            } else {
+                return new String[]{otc};
+            }
         }
     }
 

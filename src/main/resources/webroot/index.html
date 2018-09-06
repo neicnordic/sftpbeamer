@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="static/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="static/css/dataTables.bootstrap.css">
     <link rel="stylesheet" href="static/css/jquery.fileupload.css">
+    <link rel="stylesheet" href="static/css/bootstrap-combobox.css">
 
 
     <script type="text/javascript" src="static/js/jquery.js"></script>
@@ -28,6 +29,7 @@
     <script type="text/javascript" src="static/js/left.panel.js"></script>
     <script type="text/javascript" src="static/js/right.panel.js"></script>
     <script type="text/javascript" src="static/js/commons.js"></script>
+    <script type="text/javascript" src="static/js/bootstrap-combobox.js"></script>
 
     <script type="text/javascript" src="static/js/cookieconsent.min.js"></script>
 
@@ -225,8 +227,12 @@
                         <input type="text" class="form-control form-input" id="host1-username" placeholder="User Name" autofocus size="25">
                     </div>
                     <div class="form-group">
-                        <label class="sr-only" for="host1-hostname">Hostname</label>
-                        <input type="text" class="form-control form-input" id="host1-hostname" placeholder="Hostname" value="" size="30">
+                        <select class="combobox form-control" id="host1-select">
+                            <option value selected="selected">Hostname</option>
+                            <option value="Tsd">tsd-fx01.tsd.usit.no</option>
+                            <option value="Mosler">mosler.bils.se</option>
+                            <option value="Computerome">computerome.cbs.dtu.dk</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label class="sr-only" for="host1-port">Port</label>
@@ -257,8 +263,12 @@
                         <input type="text" class="form-control form-input" id="host2-username" placeholder="User Name" size="25">
                     </div>
                     <div class="form-group">
-                        <label class="sr-only" for="host2-hostname">Hostname</label>
-                        <input type="text" class="form-control form-input" id="host2-hostname" placeholder="Hostname" value="" size="30">
+                        <select class="combobox form-control" id="host2-select">
+                            <option value selected="selected">Hostname</option>
+                            <option value="Tsd">tsd-fx01.tsd.usit.no</option>
+                            <option value="Mosler">mosler.bils.se</option>
+                            <option value="Computerome">computerome.cbs.dtu.dk</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label class="sr-only" for="host2-port">Port</label>
