@@ -22,6 +22,9 @@ public final class Utils {
         JSch jSch = new JSch();
         Session session = jSch.getSession(userName, hostName, port);
         session.setConfig("StrictHostKeyChecking", "no");
+        session.setConfig("compression.s2c", "zlib@openssh.com,zlib,none");
+        session.setConfig("compression.c2s", "zlib@openssh.com,zlib,none");
+        session.setConfig("compression_level", "9");
         if (otc.isPresent()) {
             session.setUserInfo(new TwoStepsAuth(password, otc.get()));
         } else {
