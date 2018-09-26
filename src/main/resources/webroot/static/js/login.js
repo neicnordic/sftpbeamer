@@ -20,6 +20,20 @@ $(document).ready(function() {
         async: false
     });
 
+    $('#host1-select').combobox(
+        {
+            clearIfNoMatch: false,
+            appendId: "host1-hostname"
+        }
+    );
+    $('#host2-select').combobox(
+        {
+            clearIfNoMatch: false,
+            appendId: "host2-hostname"
+        }
+    );
+    $('input,.combobox').attr('size', 30);
+
     // Populate the hostname inputs with values from config file
     // $('#host1-hostname').val(host_info.hosts['host1']);
     // $('#host2-hostname').val(host_info.hosts['host2']);
@@ -35,13 +49,13 @@ $(document).ready(function() {
         if (host_info.loginmodes[hostname] == 'otp') {
             $('#credential_modal .modal-body').html('<div class="form-group"> ' +
                 '<label for="password" class="sr-only">Password</label> ' +
-                '<input type="password" class="form-control" id="password" placeholder="Password"> ' +
+                '<input type="password" class="form-control" id="password" placeholder="Password" size="25"/> ' +
                 '</div> <div class="form-group"> <label for="otc" class="sr-only">One-time Code</label> ' +
-                '<input type="text" class="form-control" id="otc" placeholder="One-time Code"/> </div>');
+                '<input type="text" class="form-control" id="otc" placeholder="One-time Code" size="15"/> </div>');
         } else {
             $('#credential_modal .modal-body').html('<div class="form-group"> ' +
                 '<label for="password" class="sr-only">Password</label> ' +
-                '<input type="password" class="form-control" id="password" placeholder="Password"></div>');
+                '<input type="password" class="form-control" id="password" placeholder="Password" size="25"/></div>');
         }
         $('#credential_modal').modal({
             keyboard: false,

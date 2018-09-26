@@ -4,7 +4,8 @@ public final class UrlPath {
     public static final String SFTP_INFO = "/sftp/info";
     public static final String SFTP_LOGIN = "/sftp/login";
     public static final String SFTP_TRANSFER_PREPARE = "/sftp/transfer/prepare";
-    public static final String SFTP_TRANSFER_ASYNC = "/sftp/transfer/async";
+    public static final String SFTP_TRANSFER_REGISTER = "/sftp/transfer/register";
+    public static final String SFTP_TRANSFER_JOB_SUBMIT = "/sftp/transfer/job/submit";
     public static final String SFTP_LIST = "/sftp/list";
     public static final String SFTP_DELETE = "/sftp/delete";
     public static final String SFTP_DISCONNECT = "/sftp/disconnect";
