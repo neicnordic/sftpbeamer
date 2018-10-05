@@ -14,6 +14,7 @@ are very welcome!
 1. [Security Considerations](#security)
 1. [Development](#development)
 1. [Deployment](#deployment)
+1. [Docker Support](#docker)
 1. [Copyright](#copyright)
 1. [License](#license)
 1. [Contributors](#contributors)
@@ -57,6 +58,16 @@ The frontend of SFTP Beamer is based on JQuery, Bootstrap and several JQuery plu
 
 ## Deployment <a name="deployment"></a>
 Please refer to [deployment guideline](https://github.com/neicnordic/sftpbeamer/blob/master/DEPLOYMENT.md) for more info.
+
+## Docker Support <a name="docker"></a>
+Now, we support dockerizing our application. Pull the dockerfile to a docker host and provide the customized app.info.json and sftp.beamer.properties files, run the following command to get a docker image.
+```
+docker build -f dockerfile --build-arg app_info=./app.info.json --build-arg property_file=./sftp.beamer.properties -t sftpbeamer .
+```
+After having a docker image, launch a docker container by running the following command. You could create a volume called logs and mount the volume in the container's /home/sftpbeamer/logs folder. Besides, you need to provide a hostname for the container, and this hostname should be set in the sftp.beamer.properties file.
+```
+docker run  -d -v logs:/home/sftpbeamer/logs -h container.sftpbeamer -p 80:8080 sftpbeamer
+```
 
 ## Copyright <a name="copyright"></a>
 [Nordic e-Infrastructures Collaboration (NeIC)](http://neic.nordforsk.org)
