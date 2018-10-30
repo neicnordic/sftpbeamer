@@ -45,7 +45,7 @@ public final class HttpRequestHandler {
     private static final String HOST2 = "host2";
 
     static void fetchInfoHandler(RoutingContext routingContext) {
-        String appInfo = "./app.info.json";
+        String appInfo = "./conf/app.info.json";
         File file = new File(appInfo);
         StringBuilder sb = new StringBuilder();
         BufferedReader br = null;

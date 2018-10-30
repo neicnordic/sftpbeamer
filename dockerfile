@@ -24,14 +24,10 @@ EXPOSE 8080
 
 VOLUME  ${SFTPBEAMER_HOME}/logs
 
+RUN mkdir ${SFTPBEAMER_HOME}/conf
+
 #Copy the jar to the container
 COPY --from=build /app/target/${SFTPBEAMER_JAR} ${SFTPBEAMER_HOME}/
-
-#Copy the config files to the container
-ARG property_file
-ARG app_info
-COPY ${app_info} ${SFTPBEAMER_HOME}/
-COPY ${property_file} ${SFTPBEAMER_HOME}/
 
 #Launch the service
 ENTRYPOINT ["sh", "-c"]

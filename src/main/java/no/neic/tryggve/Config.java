@@ -13,7 +13,7 @@ public final class Config {
     private static final Logger logger = LoggerFactory.getLogger(Config.class);
 
     private static Config instance;
-    private String configPath = "./sftp.beamer.properties";
+    private String configPath = "./conf/sftp.beamer.properties";
 
     private Properties properties;
 
