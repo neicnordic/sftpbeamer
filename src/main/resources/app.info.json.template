@@ -1,8 +1,8 @@
 {
   "server": {
     "name": "domain name",
-    "ws_port": 443,
-    "ssl": true
+    "ws_port": 443/80,
+    "ssl": true/false
   },
   "hosts": {
     "host1": "HOST1",

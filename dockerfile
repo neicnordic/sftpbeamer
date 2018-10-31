@@ -9,22 +9,17 @@ RUN mvn package
 
 FROM openjdk:8-jre-alpine
 MAINTAINER Xiaxi Li <xiaxi.li@uib.no>
-RUN adduser -D -g '' sftpbeamer
-USER sftpbeamer
 
-#Set the path for jar file in the container
 ENV SFTPBEAMER_HOME /home/sftpbeamer
-WORKDIR ${SFTPBEAMER_HOME}
-
-
 ENV SFTPBEAMER_JAR sftpbeamer.jar
 
+RUN adduser -D -g '' sftpbeamer
+USER sftpbeamer
+WORKDIR ${SFTPBEAMER_HOME}
 
 EXPOSE 8080
 
-VOLUME  ${SFTPBEAMER_HOME}/logs
-
-RUN mkdir ${SFTPBEAMER_HOME}/conf
+RUN mkdir ${SFTPBEAMER_HOME}/conf && mkdir ${SFTPBEAMER_HOME}/logs
 
 #Copy the jar to the container
 COPY --from=build /app/target/${SFTPBEAMER_JAR} ${SFTPBEAMER_HOME}/
