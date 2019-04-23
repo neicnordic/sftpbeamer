@@ -1,4 +1,6 @@
 # SFTP Beamer
+[![Build Status](https://jenkins.norgene.no/buildStatus/icon?job=SFTP+Beamer%2Ffeature%252Fjenkinsfile)](https://jenkins.norgene.no/job/SFTP%20Beamer/job/feature%252Fjenkinsfile/)
+
 SFTP Beamer is an open source web application, which is able to facilitate users
 to manipulate files between two SFTP/SSH servers.
 
